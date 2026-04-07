@@ -2,8 +2,6 @@
 # git commit -m "mô tả thay đổi"
 # git push
 
-# xincahp
-
 import streamlit as st
 import streamlit.components.v1 as components
 from textwrap import dedent
