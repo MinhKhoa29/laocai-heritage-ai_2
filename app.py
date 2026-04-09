@@ -1,3 +1,4 @@
+# streamlit run app.py --server.runOnSave true
 # git add .
 # git commit -m "mô tả thay đổi"
 # git push
@@ -364,8 +365,6 @@ header {visibility: hidden;}
 }
 </style>
 """, unsafe_allow_html=True)
-
-# CSS điểm đến
 
 # Topbar
 topbar_html = dedent("""
@@ -1530,230 +1529,394 @@ if page == "home":
     </div>
     """), unsafe_allow_html=True)
 
-elif page == "diemden":
-    destination_cards = [
-        {
-            "id": "den-thuong",
-            "title": "Đền Thượng",
-            "location": "TP. Lào Cai",
-            "type": "Tâm linh",
-            "desc": "Di tích tâm linh tiêu biểu của tỉnh Lào Cai.",
-            "price": "Miễn phí"
-        },
-        {
-            "id": "den-bao-ha",
-            "title": "Đền Bảo Hà",
-            "location": "Bảo Yên",
-            "type": "Tâm linh",
-            "desc": "Điểm đến văn hóa tâm linh nổi tiếng của Lào Cai.",
-            "price": "Miễn phí"
-        },
-        {
-            "id": "fansipan",
-            "title": "Fansipan",
-            "location": "Sa Pa",
-            "type": "Thiên nhiên",
-            "desc": "Nóc nhà Đông Dương với cảnh đẹp hùng vĩ.",
-            "price": "750.000 đ"
-        },
-        {
-            "id": "catcat",
-            "title": "Bản Cát Cát",
-            "location": "Sa Pa",
-            "type": "Văn hóa",
-            "desc": "Bản làng du lịch cộng đồng nổi tiếng.",
-            "price": "150.000 đ"
-        },
-        {
-            "id": "oquyho",
-            "title": "Ô Quy Hồ",
-            "location": "Sa Pa",
-            "type": "Check-in",
-            "desc": "Một trong tứ đại đỉnh đèo Việt Nam.",
-            "price": "Miễn phí"
-        },
-        {
-            "id": "cho-bac-ha",
-            "title": "Chợ Bắc Hà",
-            "location": "Bắc Hà",
-            "type": "Văn hóa",
-            "desc": "Chợ vùng cao đậm bản sắc dân tộc.",
-            "price": "Miễn phí"
-        },
-        {
-            "id": "nha-tho-da",
-            "title": "Nhà thờ đá Sa Pa",
-            "location": "Sa Pa",
-            "type": "Kiến trúc",
-            "desc": "Công trình kiến trúc cổ nổi bật giữa trung tâm Sa Pa.",
-            "price": "Miễn phí"
-        },
-        {
-            "id": "ham-rong",
-            "title": "Núi Hàm Rồng",
-            "location": "Sa Pa",
-            "type": "Thiên nhiên",
-            "desc": "Khu du lịch ngắm cảnh đẹp nhìn xuống thị trấn Sa Pa.",
-            "price": "70.000 đ"
+elif page == "lichtrinh":
+    import json
+    import math
+    import streamlit.components.v1 as components
+
+    try:
+        with open("lichtrinh.json", "r", encoding="utf-8") as f:
+            lichtrinh_data = json.load(f)
+    except Exception as e:
+        st.error(f"Lỗi đọc file lichtrinh.json: {e}")
+        st.stop()
+    
+    destination_options = sorted(list({item["to"] for item in lichtrinh_data}))
+    destination_options = [""] + destination_options
+
+    st.markdown("""
+    <style>
+    .lt-page-wrap{
+        width: min(1280px, calc(100% - 120px));
+        margin: 0 auto;
+        padding: 28px 0 14px 0;
+        box-sizing: border-box;
+    }
+
+    .lt-top-title{
+        text-align:center;
+        font-size:42px;
+        font-weight:900;
+        color:#0f172a;
+        margin-bottom:8px;
+        line-height:1.2;
+    }
+
+    .lt-top-subtitle{
+        text-align:center;
+        font-size:17px;
+        color:#64748b;
+        margin-bottom:30px;
+    }
+
+    .lt-left-title{
+        text-align:center;
+        font-size:34px;
+        font-weight:900;
+        color:#0f172a;
+        text-transform:uppercase;
+        line-height:1.2;
+        margin-bottom:24px;
+        letter-spacing:0.3px;
+    }
+
+    .lt-note-box{
+        background:#ffffff;
+        border-left:4px solid #0f172a;
+        border-radius:20px;
+        padding:24px 26px;
+        min-height:520px;
+        box-shadow:0 12px 28px rgba(15,23,42,0.05);
+    }
+
+    .lt-note-box h3{
+        font-size:28px;
+        font-weight:900;
+        color:#0f172a;
+        margin-top:0;
+        margin-bottom:16px;
+    }
+
+    .lt-note-box ul{
+        margin:0;
+        padding-left:22px;
+        font-size:17px;
+        line-height:2;
+        color:#1f2937;
+    }
+
+    /* KHUNG THẬT của container bên trái */
+    .lt-filter-card-wrap [data-testid="stVerticalBlockBorderWrapper"]{
+        background:#ffffff !important;
+        border:2px solid #1f2937 !important;
+        border-radius:24px !important;
+        padding:28px 24px 22px 24px !important;
+        box-shadow:0 12px 28px rgba(15,23,42,0.06) !important;
+        min-height:520px;
+    }
+
+    /* bỏ khoảng trắng thừa trong container */
+    .lt-filter-card-wrap [data-testid="stVerticalBlock"]{
+        gap:0.2rem !important;
+    }
+
+    /* style widget trong khối trái */
+    .lt-filter-scope div[data-testid="stTextInput"] label,
+    .lt-filter-scope div[data-testid="stSelectbox"] label{
+        font-size:15px !important;
+        font-weight:800 !important;
+        color:#0f172a !important;
+        margin-bottom:8px !important;
+    }
+
+    .lt-filter-scope div[data-testid="stTextInput"] input,
+    .lt-filter-scope div[data-testid="stSelectbox"] div[data-baseweb="select"] > div{
+        min-height:50px !important;
+        border-radius:14px !important;
+        border:1.5px solid #cbd5e1 !important;
+        background:#f8fbff !important;
+        box-shadow:none !important;
+        transition:all 0.2s ease;
+    }
+
+    .lt-filter-scope div[data-testid="stTextInput"] input:focus,
+    .lt-filter-scope div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within{
+        border-color:#1565c0 !important;
+        box-shadow:0 0 0 3px rgba(21,101,192,0.12) !important;
+        background:#ffffff !important;
+    }
+
+    .lt-filter-scope div[data-testid="stTextInput"] input{
+        font-size:15px !important;
+        color:#111827 !important;
+    }
+
+    .lt-filter-scope div[data-testid="stSelectbox"] span{
+        font-size:15px !important;
+        color:#111827 !important;
+        font-weight:500 !important;
+    }
+
+    .lt-filter-scope div[data-testid="stTextInput"],
+    .lt-filter-scope div[data-testid="stSelectbox"]{
+        margin-bottom:16px !important;
+    }
+
+    .lt-filter-scope svg{
+        color:#475569 !important;
+    }
+
+    @media (max-width: 900px){
+        .lt-note-box{
+            min-height:auto;
+            margin-top:10px;
+            border-left:none;
+            border-top:4px solid #0f172a;
+            border-radius:20px;
+            padding:22px 20px 18px 20px;
         }
-    ]
 
-    cards_html = """
-    <html>
-    <head>
-        <style>
-            * {
-                box-sizing: border-box;
-                font-family: Arial, sans-serif;
-            }
+        .lt-filter-card-wrap [data-testid="stVerticalBlockBorderWrapper"]{
+            min-height:auto;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-            body {
-                margin: 0;
-                background: transparent;
-            }
+    st.markdown('<div class="lt-page-wrap">', unsafe_allow_html=True)
+    st.markdown('<div class="lt-top-title">Lịch trình gợi ý</div>', unsafe_allow_html=True)
+    st.markdown('<div class="lt-top-subtitle">Lựa chọn hành trình phù hợp theo loại hình du lịch tại Lào Cai</div>', unsafe_allow_html=True)
 
-            .place-page {
-                max-width: 1280px;
-                margin: 0 auto;
-                padding: 20px 24px 40px 24px;
-            }
+    left_col, right_col = st.columns([1.02, 1], gap="medium")
 
-            .place-title {
-                text-align: center;
-                font-size: 36px;
-                font-weight: 800;
-                color: #111827;
-                margin-bottom: 8px;
-            }
+    with left_col:
+        st.markdown('<div class="lt-filter-card-wrap">', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="lt-filter-scope">', unsafe_allow_html=True)
+            st.markdown('<div class="lt-left-title">Lọc tour theo</div>', unsafe_allow_html=True)
 
-            .place-subtitle {
-                text-align: center;
-                font-size: 17px;
-                color: #6b7280;
-                margin-bottom: 30px;
-            }
+            destination_query = st.selectbox(
+                "Bạn muốn đến đâu?",
+                destination_options,
+                index=0,
+                key="lichtrinh_destination",
+                placeholder="Gõ hoặc chọn một địa điểm..."
+)
 
-            .place-grid {
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 24px;
-            }
+            departure_place = st.selectbox(
+                "Nơi khởi hành",
+                ["TP. Lào Cai"],
+                key="lichtrinh_departure"
+            )
 
-            .place-card {
-                background: #ffffff;
-                border-radius: 18px;
-                box-shadow: 0 10px 24px rgba(0,0,0,0.08);
-                padding: 18px;
-                min-height: 250px;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-            }
+            selected_category = st.selectbox(
+                "Chọn loại hình",
+                ["Tất cả", "Tâm linh", "Check-in", "Sinh thái", "Văn hóa"],
+                key="lichtrinh_category"
+            )
 
-            .place-name {
-                font-size: 24px;
-                font-weight: 800;
-                color: #111827;
-                line-height: 1.35;
-                min-height: 66px;
-                margin-bottom: 10px;
-            }
+            sort_option = st.selectbox(
+                "Sắp xếp chi phí",
+                ["Mặc định", "Chi phí tăng dần", "Chi phí giảm dần"],
+                key="lichtrinh_sort"
+            )
 
-            .place-meta {
-                font-size: 15px;
-                color: #6b7280;
-                line-height: 1.7;
-                min-height: 28px;
-                margin-bottom: 12px;
-            }
+            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-            .place-desc {
-                font-size: 15px;
-                color: #374151;
-                line-height: 1.8;
-                min-height: 84px;
-                margin-bottom: 14px;
-            }
+    with right_col:
+        st.markdown("""
+        <div class="lt-note-box">
+            <h3>Lưu ý:</h3>
+            <ul>
+                <li>Giá lịch trình mang tính tham khảo tại thời điểm hiện tại.</li>
+                <li>Chi phí có thể thay đổi theo mùa du lịch và phương tiện di chuyển.</li>
+                <li>Một số điểm đến có thể phát sinh thêm phí dịch vụ hoặc gửi xe.</li>
+                <li>Nên kiểm tra lại giờ mở cửa trước khi đi.</li>
+                <li>Có thể dùng bộ lọc để tìm nhanh hành trình phù hợp.</li>
+                <li>Ưu tiên nhập tên điểm đến nếu bạn đã có nơi muốn đi.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
-            .place-footer {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 12px;
-                margin-top: auto;
-            }
+    st.markdown('</div>', unsafe_allow_html=True)
 
-            .place-price {
-                font-size: 18px;
-                font-weight: 800;
-                color: #ef3b2d;
-            }
+    filtered_data = lichtrinh_data
 
-            .place-btn {
-                text-decoration: none;
-                background: #1565c0;
-                color: white;
-                padding: 9px 14px;
-                border-radius: 10px;
-                font-size: 14px;
-                font-weight: 700;
-                display: inline-block;
-            }
+    if selected_category != "Tất cả":
+        filtered_data = [item for item in filtered_data if item["category"] == selected_category]
 
-            .place-btn:hover {
-                background: #0f4f9a;
-            }
+    if destination_query.strip():
+        keyword = destination_query.strip().lower()
+        filtered_data = [
+            item for item in filtered_data
+            if keyword in item["to"].lower()
+        ]
 
-            @media (max-width: 1100px) {
-                .place-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-            }
+    def extract_price(text):
+        first_part = str(text).split("–")[0]
+        digits = "".join(ch for ch in first_part if ch.isdigit())
+        return int(digits) if digits else 0
 
-            @media (max-width: 768px) {
-                .place-grid {
-                    grid-template-columns: 1fr;
-                }
+    if sort_option == "Chi phí tăng dần":
+        filtered_data = sorted(filtered_data, key=lambda x: extract_price(x["total_price"]))
+    elif sort_option == "Chi phí giảm dần":
+        filtered_data = sorted(filtered_data, key=lambda x: extract_price(x["total_price"]), reverse=True)
 
-                .place-title {
-                    font-size: 28px;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="place-page">
-            <div class="place-title">Điểm đến nổi bật</div>
-            <div class="place-subtitle">
-                Khám phá các di tích và khu du lịch nổi bật của Lào Cai
-            </div>
+    card_css = """
+    <style>
+    body{
+        margin:0;
+        background:transparent;
+        font-family: Arial, sans-serif;
+    }
 
-            <div class="place-grid">
+    .lt-grid{
+        display:grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap:24px;
+        padding:14px 0 18px 0;
+        box-sizing:border-box;
+    }
+
+    .lt-card{
+        background:#ffffff;
+        border:1.5px solid #1f1f1f;
+        border-radius:22px;
+        padding:22px 20px 18px 20px;
+        min-height:355px;
+        width:100%;
+        margin:0;
+        box-sizing:border-box;
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        box-shadow:0 4px 14px rgba(0,0,0,0.04);
+    }
+
+    .lt-route{
+        font-size:15px;
+        font-weight:900;
+        text-transform:uppercase;
+        color:#111827;
+        line-height:1.5;
+        margin-bottom:20px;
+        min-height:48px;
+        letter-spacing:0.2px;
+    }
+
+    .lt-table{
+        display:grid;
+        grid-template-columns: 165px 1fr;
+        row-gap:12px;
+        column-gap:14px;
+        align-items:start;
+    }
+
+    .lt-label{
+        font-size:13px;
+        font-weight:800;
+        color:#111827;
+        line-height:1.55;
+    }
+
+    .lt-value{
+        font-size:13px;
+        font-weight:500;
+        color:#111827;
+        line-height:1.55;
+        word-break:break-word;
+        text-align:left;
+    }
+
+    .lt-bottom{
+        margin-top:22px;
+        display:flex;
+        justify-content:flex-end;
+        align-items:flex-end;
+        gap:8px;
+    }
+
+    .lt-price-label{
+        font-size:13px;
+        font-weight:800;
+        color:#111827;
+        text-align:right;
+        line-height:1.2;
+    }
+
+    .lt-price-value{
+        font-size:16px;
+        font-weight:900;
+        color:#ff3b30;
+        line-height:1.2;
+    }
+
+    @media (max-width: 1200px){
+        .lt-grid{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 700px){
+        .lt-grid{
+            grid-template-columns: 1fr;
+            padding:10px 0 14px 0;
+        }
+
+        .lt-card{
+            max-width:100%;
+            min-height:auto;
+        }
+
+        .lt-table{
+            grid-template-columns: 145px 1fr;
+        }
+    }
+    </style>
     """
 
-    for item in destination_cards:
+    cards_html = '<div class="lt-grid">'
+
+    for item in filtered_data:
         cards_html += f"""
-                <div class="place-card">
-                    <div>
-                        <div class="place-name">{item['title']}</div>
-                        <div class="place-meta">📍 {item['location']} • {item['type']}</div>
-                        <div class="place-desc">{item['desc']}</div>
-                    </div>
+        <div class="lt-card">
+            <div>
+                <div class="lt-route">{item['from']} → {item['to']}</div>
 
-                    <div class="place-footer">
-                        <div class="place-price">{item['price']}</div>
-                        <a class="place-btn" href="/?page=chitiet&place={item['id']}" target="_top">
-                            Xem chi tiết
-                        </a>
-                    </div>
+                <div class="lt-table">
+                    <div class="lt-label">Quãng đường:</div>
+                    <div class="lt-value">{item['distance_km']}</div>
+
+                    <div class="lt-label">Thời gian:</div>
+                    <div class="lt-value">{item['time_estimate']}</div>
+
+                    <div class="lt-label">Khách sạn/ Nhà nghỉ - giá:</div>
+                    <div class="lt-value">{item['hotel_name']} – {item['hotel_price']}</div>
+
+                    <div class="lt-label">Phương tiện (Xanh SM):</div>
+                    <div class="lt-value">{item['transport_name']}</div>
+
+                    <div class="lt-label">Giá xe:</div>
+                    <div class="lt-value">{item['transport_price']}</div>
+
+                    <div class="lt-label">Giá vé:</div>
+                    <div class="lt-value">{item['ticket_price']}</div>
                 </div>
-        """
+            </div>
 
-    cards_html += """
+            <div class="lt-bottom">
+                <div class="lt-price-value">{item['transport_price']}</div>
+                <div class="lt-price-label">Giá từ<br>/ Khách</div>
             </div>
         </div>
-    </body>
-    </html>
-    """
+        """
 
-    components.html(cards_html, height= 800, scrolling=False)
+    cards_html += "</div>"
+
+    rows = math.ceil(len(filtered_data) / 3) if filtered_data else 1
+    height = max(420, rows * 390)
+
+    components.html(card_css + cards_html, height=height, scrolling=False)
+
+    st.markdown('</div>', unsafe_allow_html=True)

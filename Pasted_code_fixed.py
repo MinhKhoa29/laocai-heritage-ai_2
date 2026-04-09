@@ -1,3 +1,8 @@
+# streamlit run app.py --server.runOnSave true
+# git add .
+# git commit -m "mô tả thay đổi"
+# git push
+
 import streamlit as st
 import streamlit.components.v1 as components
 from textwrap import dedent
@@ -9,8 +14,8 @@ st.set_page_config(
 )
 
 page = st.query_params.get("page", "home")
-place = st.query_params.get("place", "")
 
+# CSS trang chủ
 st.markdown("""
 <style>
 /* Ẩn menu mặc định streamlit cho giống web thật hơn */
@@ -405,7 +410,7 @@ if page == "home":
     <style>
     .search-wrapper {
         position: relative;
-        margin-top: 50px;
+        margin-top: 30px;
         z-index: 10;
         display: flex;
         justify-content: center;
@@ -542,7 +547,7 @@ if page == "home":
             </div>
         </div>
     </div>
-    """, height=200, scrolling=False)
+    """, height=170, scrolling=False)
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Khám phá nhanh
@@ -970,7 +975,6 @@ if page == "home":
         background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.12));
         transition: 0.35s ease;
         z-index: 1;
-        pointer-events: none;
     }
 
     .favorite-content {
@@ -995,54 +999,60 @@ if page == "home":
         transition: 0.35s ease;
     }
 
-    .favorite-divider {
-        width: 56px;
-        height: 2px;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.95);
-        margin: 12px auto 14px auto;
-        opacity: 0;
-        transform: translateY(10px);
+    .favorite-content {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        text-align: center;
+        color: #fff;
+    }
+
+    .favorite-name {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        text-transform: uppercase;
+        line-height: 1.3;
         transition: 0.35s ease;
     }
 
-    .favorite-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px 22px;
-        background: #1565c0;
-        color: white;
-        border-radius: 10px;
-        text-decoration: none;
-        font-size: 15px;
-        font-weight: 700;
+    .favorite-info {
+        margin-top: 12px;
+        max-width: 88%;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #ffffff;
         opacity: 0;
         transform: translateY(12px);
         transition: 0.35s ease;
-        position: relative;
-        z-index: 5;
-        pointer-events: auto;
-        cursor: pointer;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.35);
     }
 
-    .favorite-card:hover::before {
-        transform: scale(1.08);
-    }
+.favorite-card:hover::before {
+    transform: scale(1.08);
+}
 
-    .favorite-card:hover .favorite-overlay {
-        background: linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0.22));
-    }
+.favorite-card:hover .favorite-overlay {
+    background: linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0.28));
+}
 
-    .favorite-card:hover .favorite-name {
-        transform: translateY(-4px);
-    }
+.favorite-card:hover .favorite-name {
+    transform: translateY(-8px);
+}
 
-    .favorite-card:hover .favorite-divider,
-    .favorite-card:hover .favorite-button {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.favorite-card:hover .favorite-info {
+    opacity: 1;
+    transform: translateY(0);
+}
 
     /* vị trí từng card */
     .card-1 {
@@ -1169,8 +1179,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
 
@@ -1178,8 +1187,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
 
@@ -1187,8 +1195,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
 
@@ -1196,8 +1203,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
 
@@ -1205,8 +1211,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
 
@@ -1214,8 +1219,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
 
@@ -1223,8 +1227,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
 
@@ -1232,8 +1235,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
 
@@ -1241,8 +1243,7 @@ if page == "home":
                     <div class="favorite-overlay"></div>
                     <div class="favorite-content">
                         <div class="favorite-name"></div>
-                        <div class="favorite-divider"></div>
-                        <button type="button" class="favorite-button">Khám phá</button>
+                        <div class="favorite-info"></div>
                     </div>
                 </div>
             </div>
@@ -1254,146 +1255,146 @@ if page == "home":
         north: [
             {
                 name: "Quảng Ninh",
-                slug: "quangninh",
-                image: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1200&auto=format&fit=crop",
+                info: "Nổi tiếng với Vịnh Hạ Long, di sản thiên nhiên thế giới với cảnh biển đảo tuyệt đẹp."
             },
             {
                 name: "Hà Giang",
-                slug: "hagiang",
-                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop",
+                info: "Vùng cao nguyên đá hùng vĩ, nổi bật với đèo Mã Pí Lèng, cột cờ Lũng Cú và mùa hoa tam giác mạch."
             },
             {
                 name: "Lào Cai",
-                slug: "laocai",
-                image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1200&auto=format&fit=crop",
+                info: "Cửa ngõ Tây Bắc, nổi tiếng với Sa Pa, Fansipan, ruộng bậc thang và bản sắc văn hóa dân tộc đặc sắc."
             },
             {
                 name: "Ninh Bình",
-                slug: "ninhbinh",
-                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop",
+                info: "Nổi bật với Tràng An, Tam Cốc, Hang Múa và quần thể danh thắng non nước hữu tình."
             },
             {
                 name: "Yên Bái",
-                slug: "yenbai",
-                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop",
+                info: "Được biết đến với Mù Cang Chải, ruộng bậc thang vàng óng và vẻ đẹp núi rừng Tây Bắc."
             },
             {
                 name: "Sơn La",
-                slug: "sonla",
-                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop",
+                info: "Có Mộc Châu thơ mộng, đồi chè xanh mướt, mùa hoa mận và khí hậu mát mẻ quanh năm."
             },
             {
                 name: "Cao Bằng",
-                slug: "caobang",
-                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+                info: "Nổi tiếng với thác Bản Giốc, động Ngườm Ngao và cảnh sắc núi non biên giới hùng vĩ."
             },
             {
                 name: "Hải Phòng",
-                slug: "haiphong",
-                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
+                info: "Thành phố cảng sôi động, nổi bật với Cát Bà, Đồ Sơn và nhiều món hải sản hấp dẫn."
             },
             {
                 name: "Hà Nội",
-                slug: "hanoi",
-                image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1200&auto=format&fit=crop",
+                info: "Thủ đô nghìn năm văn hiến với Hồ Gươm, phố cổ, Văn Miếu và nhiều giá trị lịch sử lâu đời."
             }
         ],
 
         central: [
             {
                 name: "Huế",
-                slug: "hue",
-                image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200&auto=format&fit=crop",
+                info: "Cố đô nổi tiếng với Đại Nội, lăng tẩm triều Nguyễn, chùa Thiên Mụ và nét văn hóa trầm mặc."
             },
             {
                 name: "Đà Nẵng",
-                slug: "danang",
-                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+                info: "Thành phố biển hiện đại với Bà Nà Hills, cầu Rồng, biển Mỹ Khê và nhiều điểm check-in hấp dẫn."
             },
             {
                 name: "Quảng Nam",
-                slug: "quangnam",
-                image: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1200&auto=format&fit=crop",
+                info: "Nổi bật với phố cổ Hội An, thánh địa Mỹ Sơn và những làng nghề truyền thống đậm bản sắc."
             },
             {
                 name: "Nha Trang",
-                slug: "nhatrang",
-                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
+                info: "Thiên đường biển xanh với bãi cát đẹp, đảo hấp dẫn, hải sản phong phú và nhiều hoạt động nghỉ dưỡng."
             },
             {
                 name: "Phú Yên",
-                slug: "phuyen",
-                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop",
+                info: "Gây ấn tượng với Gành Đá Đĩa, Bãi Xép, biển trời hoang sơ và khung cảnh yên bình."
             },
             {
                 name: "Bình Định",
-                slug: "binhdinh",
-                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop",
+                info: "Nổi tiếng với Quy Nhơn, Eo Gió, Kỳ Co và sự kết hợp giữa biển đẹp với văn hóa võ cổ truyền."
             },
             {
                 name: "Quảng Bình",
-                slug: "quangbinh",
-                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop",
+                info: "Là quê hương của Phong Nha - Kẻ Bàng, hệ thống hang động kỳ vĩ và thiên nhiên hoang sơ."
             },
             {
                 name: "Thanh Hóa",
-                slug: "thanhhoa",
-                image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1200&auto=format&fit=crop",
+                info: "Sở hữu biển Sầm Sơn, suối cá Cẩm Lương, thành nhà Hồ và nhiều dấu ấn lịch sử đặc sắc."
             },
             {
                 name: "Nghệ An",
-                slug: "nghean",
-                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop",
+                info: "Vùng đất giàu truyền thống với quê Bác, biển Cửa Lò, vườn quốc gia Pù Mát và nhiều giá trị văn hóa."
             }
         ],
 
         south: [
             {
                 name: "TP. Hồ Chí Minh",
-                slug: "hcm",
-                image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=1200&auto=format&fit=crop",
+                info: "Trung tâm kinh tế sôi động với chợ Bến Thành, nhà thờ Đức Bà, phố đi bộ và nhịp sống hiện đại."
             },
             {
                 name: "Kiên Giang (Phú Quốc)",
-                slug: "kiengiang",
-                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
+                info: "Thiên đường biển đảo với bãi biển trong xanh, hoàng hôn đẹp, làng chài và khu nghỉ dưỡng nổi tiếng."
             },
             {
                 name: "Lâm Đồng (Đà Lạt)",
-                slug: "lamdong",
-                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop",
+                info: "Thành phố ngàn hoa với khí hậu mát mẻ, hồ Xuân Hương, đồi thông và nhiều điểm săn mây thơ mộng."
             },
             {
                 name: "Bà Rịa - Vũng Tàu",
-                slug: "vungtau",
-                image: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1200&auto=format&fit=crop",
+                info: "Điểm đến biển gần gũi với bãi Sau, tượng Chúa Kitô, hải sản ngon và không khí nghỉ dưỡng cuối tuần."
             },
             {
                 name: "Cần Thơ",
-                slug: "cantho",
-                image: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1200&auto=format&fit=crop",
+                info: "Thủ phủ miền Tây nổi tiếng với chợ nổi Cái Răng, bến Ninh Kiều và nét văn hóa sông nước đặc trưng."
             },
             {
                 name: "An Giang",
-                slug: "angiang",
-                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop",
+                info: "Nổi bật với rừng tràm Trà Sư, núi Cấm, miếu Bà Chúa Xứ và cảnh sắc miền biên giới đặc biệt."
             },
             {
                 name: "Tiền Giang",
-                slug: "tiengiang",
-                image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1200&auto=format&fit=crop",
+                info: "Hấp dẫn với chợ nổi, cù lao Thới Sơn, miệt vườn trái cây và những trải nghiệm sông nước dân dã."
             },
             {
                 name: "Bến Tre",
-                slug: "bentre",
-                image: "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?q=80&w=1200&auto=format&fit=crop",
+                info: "Xứ dừa nổi tiếng với kênh rạch xanh mát, làng nghề truyền thống và nhịp sống miệt vườn yên bình."
             },
             {
                 name: "Đồng Tháp",
-                slug: "dongthap",
-                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop"
+                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+                info: "Nổi bật với Đồng Tháp Mười, làng hoa Sa Đéc, khu du lịch sinh thái và vẻ đẹp miền Tây mộc mạc."
             }
-               ]
+        ]
     };
 
     const tabs = document.querySelectorAll(".favorite-tab");
@@ -1406,21 +1407,14 @@ if page == "home":
 
         setTimeout(() => {
             cards.forEach((card, index) => {
-                const item = data[index];
-
-                card.style.backgroundImage = `url('${item.image}')`;
-                card.querySelector(".favorite-name").textContent = item.name;
-
-                const btn = card.querySelector(".favorite-button");
-                btn.onclick = function() {
-                    window.top.location.href = `${window.top.location.pathname}?page=detail&place=${item.slug}`;
-                };
-
+                card.style.backgroundImage = `url('${data[index].image}')`;
+                card.querySelector(".favorite-name").textContent = data[index].name;
+                card.querySelector(".favorite-info").textContent = data[index].info;
                 card.classList.remove("fade-out");
             });
         }, 220);
     }
-                           
+
     tabs.forEach(tab => {
         tab.addEventListener("click", () => {
             tabs.forEach(item => item.classList.remove("active"));
@@ -1431,7 +1425,7 @@ if page == "home":
 
     renderRegion("north");
     </script>
-    """), height=980, scrolling=False)
+    """), height=900, scrolling=False)
 
     # Footer
     st.markdown(dedent("""
@@ -1453,12 +1447,12 @@ if page == "home":
     </div>
 
     <div style="line-height:1.8;font-size:16px;color:#1f2937;">
-    190 Pasteur, Phường Xuân Hòa,<br>
-    TP. Hồ Chí Minh, Việt Nam
+    Thôn...., xã Khánh Yên,<br>
+    tỉnh Lào Cai, Việt Nam
     </div>
 
     <div style="margin-top:12px;font-size:16px;color:#1f2937;">
-    info@vietravel.com
+    khoagaming999@gmail.com
     </div>
 
     <div style="margin-top:18px;font-size:22px;">
@@ -1475,7 +1469,7 @@ if page == "home":
     font-weight:700;
     font-size:16px;
     ">
-    📞 1800 646 888
+    📞 0346 538 197
     </div>
 
     <div style="margin-top:10px;font-size:15px;color:#1f2937;">
@@ -1535,333 +1529,285 @@ if page == "home":
     </div>
     """), unsafe_allow_html=True)
 
+elif page == "lichtrinh":
+    import json
+    import math
+    import streamlit.components.v1 as components
 
-elif page == "detail":
-    province_data = {
-        "quangninh": {
-            "title": "Quảng Ninh",
-            "subtitle": "Di sản thiên nhiên nổi bật miền Bắc",
-            "hero": "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Quảng Ninh nổi tiếng với Vịnh Hạ Long, cảnh quan biển đảo hùng vĩ và hệ thống du lịch nghỉ dưỡng phát triển mạnh.",
-            "places": ["Vịnh Hạ Long", "Bãi Cháy", "Yên Tử"],
-            "foods": ["Chả mực", "Sam biển", "Sá sùng"],
-            "activities": ["Du thuyền", "Tắm biển", "Khám phá hang động"]
-        },
-        "hagiang": {
-            "title": "Hà Giang",
-            "subtitle": "Cao nguyên đá và mùa hoa vùng biên",
-            "hero": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Hà Giang hấp dẫn với đèo Mã Pí Lèng, cao nguyên đá Đồng Văn và vẻ đẹp hoang sơ đặc trưng của miền núi phía Bắc.",
-            "places": ["Đồng Văn", "Mã Pí Lèng", "Cột cờ Lũng Cú"],
-            "foods": ["Thắng cố", "Bánh tam giác mạch", "Cháo ấu tẩu"],
-            "activities": ["Phượt đèo", "Check-in cao nguyên đá", "Ngắm mùa hoa"]
-        },
-        "laocai": {
-            "title": "Lào Cai",
-            "subtitle": "Bản sắc văn hóa và núi non Tây Bắc",
-            "hero": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Lào Cai nổi bật với Sa Pa, Fansipan, chợ phiên vùng cao và bản sắc văn hóa đa dạng của các dân tộc.",
-            "places": ["Sa Pa", "Fansipan", "Bắc Hà"],
-            "foods": ["Thắng cố", "Lợn cắp nách", "Cá hồi Sa Pa"],
-            "activities": ["Leo núi", "Tham quan bản làng", "Săn mây"]
-        },
-        "ninhbinh": {
-            "title": "Ninh Bình",
-            "subtitle": "Non nước hữu tình giữa lòng di sản",
-            "hero": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Ninh Bình là điểm đến nổi bật với Tràng An, Tam Cốc, chùa Bái Đính và cảnh sắc núi đá vôi rất đặc trưng.",
-            "places": ["Tràng An", "Tam Cốc", "Bái Đính"],
-            "foods": ["Cơm cháy", "Dê núi", "Miến lươn"],
-            "activities": ["Đi thuyền", "Tham quan hang động", "Leo núi"]
-        },
-        "yenbai": {
-            "title": "Yên Bái",
-            "subtitle": "Ruộng bậc thang và mùa vàng Tây Bắc",
-            "hero": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Yên Bái nổi tiếng với Mù Cang Chải, đèo Khau Phạ và những mùa lúa chín vàng tuyệt đẹp.",
-            "places": ["Mù Cang Chải", "Khau Phạ", "Suối Giàng"],
-            "foods": ["Cốm Tú Lệ", "Thịt trâu gác bếp", "Xôi ngũ sắc"],
-            "activities": ["Check-in ruộng bậc thang", "Trekking", "Dù lượn"]
-        },
-        "sonla": {
-            "title": "Sơn La",
-            "subtitle": "Cao nguyên xanh mát và bản làng Tây Bắc",
-            "hero": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Sơn La thu hút với Mộc Châu, đồi chè, rừng thông và khí hậu dễ chịu quanh năm.",
-            "places": ["Mộc Châu", "Tà Xùa", "Ngọc Chiến"],
-            "foods": ["Bê chao", "Sữa chua nếp cẩm", "Cá suối nướng"],
-            "activities": ["Ngắm đồi chè", "Săn mây", "Tham quan bản làng"]
-        },
-        "caobang": {
-            "title": "Cao Bằng",
-            "subtitle": "Thác nước kỳ vĩ và non xanh biên giới",
-            "hero": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Cao Bằng nổi tiếng với thác Bản Giốc, động Ngườm Ngao và vẻ đẹp xanh mát của núi rừng Đông Bắc.",
-            "places": ["Thác Bản Giốc", "Động Ngườm Ngao", "Pác Bó"],
-            "foods": ["Bánh cuốn Cao Bằng", "Vịt quay 7 vị", "Hạt dẻ Trùng Khánh"],
-            "activities": ["Tham quan thác", "Khám phá hang động", "Du lịch lịch sử"]
-        },
-        "haiphong": {
-            "title": "Hải Phòng",
-            "subtitle": "Thành phố cảng sôi động và biển đảo hấp dẫn",
-            "hero": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Hải Phòng có Cát Bà, Đồ Sơn, ẩm thực phong phú và không khí biển đặc trưng của thành phố cảng.",
-            "places": ["Cát Bà", "Đồ Sơn", "Nhà hát lớn Hải Phòng"],
-            "foods": ["Bánh đa cua", "Nem cua bể", "Bún tôm"],
-            "activities": ["Tắm biển", "Du thuyền", "Tham quan đảo"]
-        },
-        "hanoi": {
-            "title": "Hà Nội",
-            "subtitle": "Nghìn năm văn hiến giữa nhịp sống hiện đại",
-            "hero": "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Hà Nội là trung tâm văn hóa, lịch sử với Hồ Gươm, phố cổ, Văn Miếu và rất nhiều di sản kiến trúc.",
-            "places": ["Hồ Gươm", "Phố cổ", "Văn Miếu"],
-            "foods": ["Phở", "Bún chả", "Cốm"],
-            "activities": ["Dạo phố cổ", "Tham quan di tích", "Thưởng thức ẩm thực"]
-        },
-        "hue": {
-            "title": "Huế",
-            "subtitle": "Cố đô di sản và nét trầm mặc miền Trung",
-            "hero": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Huế nổi bật với Đại Nội, lăng tẩm, sông Hương và nét văn hóa cung đình rất riêng.",
-            "places": ["Đại Nội", "Chùa Thiên Mụ", "Lăng Khải Định"],
-            "foods": ["Bún bò Huế", "Cơm hến", "Bánh bèo"],
-            "activities": ["Tham quan di tích", "Nghe ca Huế", "Du thuyền sông Hương"]
-        },
-        "danang": {
-            "title": "Đà Nẵng",
-            "subtitle": "Thành phố biển năng động miền Trung",
-            "hero": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Đà Nẵng có bãi biển đẹp, cầu Rồng, Bà Nà Hills và là cửa ngõ du lịch nổi bật miền Trung.",
-            "places": ["Bà Nà Hills", "Biển Mỹ Khê", "Cầu Rồng"],
-            "foods": ["Mì Quảng", "Bún chả cá", "Bánh tráng cuốn thịt heo"],
-            "activities": ["Tắm biển", "Check-in cầu", "Vui chơi giải trí"]
-        },
-        "quangnam": {
-            "title": "Quảng Nam",
-            "subtitle": "Phố cổ và miền di sản duyên hải",
-            "hero": "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Quảng Nam nổi tiếng với Hội An, Mỹ Sơn, làng nghề truyền thống và các bãi biển đẹp.",
-            "places": ["Hội An", "Mỹ Sơn", "Cù Lao Chàm"],
-            "foods": ["Cao lầu", "Mì Quảng", "Bánh tổ"],
-            "activities": ["Dạo phố cổ", "Thả đèn hoa đăng", "Tham quan di sản"]
-        },
-        "nhatrang": {
-            "title": "Nha Trang",
-            "subtitle": "Biển xanh, cát trắng và nghỉ dưỡng",
-            "hero": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Nha Trang hấp dẫn với bãi biển đẹp, đảo du lịch, dịch vụ nghỉ dưỡng và giải trí biển phong phú.",
-            "places": ["VinWonders", "Tháp Bà", "Hòn Mun"],
-            "foods": ["Bún chả cá", "Nem nướng", "Hải sản"],
-            "activities": ["Lặn biển", "Tắm biển", "Du lịch đảo"]
-        },
-        "phuyen": {
-            "title": "Phú Yên",
-            "subtitle": "Vùng biển hoang sơ và cảnh quay nổi tiếng",
-            "hero": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Phú Yên được yêu thích với Gành Đá Đĩa, Bãi Xép và vẻ đẹp yên bình của miền biển.",
-            "places": ["Gành Đá Đĩa", "Bãi Xép", "Vũng Rô"],
-            "foods": ["Mắt cá ngừ đại dương", "Bánh hỏi lòng heo", "Sò huyết Ô Loan"],
-            "activities": ["Check-in biển", "Ngắm bình minh", "Khám phá thiên nhiên"]
-        },
-        "binhdinh": {
-            "title": "Bình Định",
-            "subtitle": "Biển đẹp và đất võ miền Trung",
-            "hero": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Bình Định nổi bật với Quy Nhơn, Kỳ Co, Eo Gió và truyền thống võ cổ truyền.",
-            "places": ["Kỳ Co", "Eo Gió", "Quy Nhơn"],
-            "foods": ["Bún chả cá", "Bánh xèo tôm nhảy", "Nem chợ Huyện"],
-            "activities": ["Tắm biển", "Check-in eo biển", "Thưởng thức hải sản"]
-        },
-        "quangbinh": {
-            "title": "Quảng Bình",
-            "subtitle": "Vương quốc hang động kỳ vĩ",
-            "hero": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Quảng Bình nổi tiếng với Phong Nha - Kẻ Bàng, hệ thống hang động lớn và thiên nhiên hoang sơ.",
-            "places": ["Phong Nha", "Sơn Đoòng", "Biển Nhật Lệ"],
-            "foods": ["Cháo canh", "Bánh bột lọc", "Hải sản"],
-            "activities": ["Khám phá hang động", "Trekking", "Tắm biển"]
-        },
-        "thanhhoa": {
-            "title": "Thanh Hóa",
-            "subtitle": "Biển Sầm Sơn và đất cổ xứ Thanh",
-            "hero": "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Thanh Hóa có biển Sầm Sơn, suối cá thần Cẩm Lương và nhiều điểm di tích lịch sử lâu đời.",
-            "places": ["Sầm Sơn", "Pù Luông", "Thành Nhà Hồ"],
-            "foods": ["Nem chua", "Bánh răng bừa", "Chả tôm"],
-            "activities": ["Tắm biển", "Trekking", "Tham quan di tích"]
-        },
-        "nghean": {
-            "title": "Nghệ An",
-            "subtitle": "Biển Cửa Lò và quê hương xứ Nghệ",
-            "hero": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Nghệ An có Cửa Lò, quê Bác, vườn quốc gia Pù Mát và nhiều nét văn hóa đặc sắc.",
-            "places": ["Cửa Lò", "Kim Liên", "Pù Mát"],
-            "foods": ["Cháo lươn", "Nhút Thanh Chương", "Bánh mướt"],
-            "activities": ["Tắm biển", "Du lịch lịch sử", "Khám phá sinh thái"]
-        },
-        "hcm": {
-            "title": "TP. Hồ Chí Minh",
-            "subtitle": "Trung tâm sôi động của miền Nam",
-            "hero": "https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=1600&auto=format&fit=crop",
-            "intro": "TP. Hồ Chí Minh là trung tâm kinh tế, văn hóa và du lịch với nhiều điểm tham quan, mua sắm và ẩm thực đa dạng.",
-            "places": ["Nhà thờ Đức Bà", "Bưu điện Thành phố", "Chợ Bến Thành"],
-            "foods": ["Cơm tấm", "Bánh mì", "Hủ tiếu"],
-            "activities": ["City tour", "Mua sắm", "Khám phá ẩm thực"]
-        },
-        "kiengiang": {
-            "title": "Kiên Giang - Phú Quốc",
-            "subtitle": "Thiên đường biển đảo phía Nam",
-            "hero": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Kiên Giang nổi bật với Phú Quốc, biển trong xanh, resort nghỉ dưỡng và nhiều hoạt động du lịch đảo hấp dẫn.",
-            "places": ["Bãi Sao", "Hòn Thơm", "Chợ đêm Phú Quốc"],
-            "foods": ["Gỏi cá trích", "Bún quậy", "Nhum biển"],
-            "activities": ["Lặn ngắm san hô", "Đi cáp treo", "Tắm biển"]
-        },
-        "lamdong": {
-            "title": "Lâm Đồng - Đà Lạt",
-            "subtitle": "Thành phố ngàn hoa thơ mộng",
-            "hero": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Lâm Đồng nổi tiếng với Đà Lạt, khí hậu mát mẻ, rừng thông, hồ nước và các vườn hoa đầy màu sắc.",
-            "places": ["Hồ Xuân Hương", "Langbiang", "Thung lũng Tình Yêu"],
-            "foods": ["Dâu tây", "Atiso", "Mứt Đà Lạt"],
-            "activities": ["Đạp xe", "Săn mây", "Check-in vườn hoa"]
-        },
-        "vungtau": {
-            "title": "Bà Rịa - Vũng Tàu",
-            "subtitle": "Biển gần và nghỉ dưỡng cuối tuần",
-            "hero": "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Vũng Tàu là điểm du lịch biển quen thuộc với bãi tắm đẹp, hải sản phong phú và di chuyển thuận tiện.",
-            "places": ["Bãi Sau", "Tượng Chúa Kitô", "Mũi Nghinh Phong"],
-            "foods": ["Bánh khọt", "Lẩu cá đuối", "Hải sản"],
-            "activities": ["Tắm biển", "Ăn hải sản", "Ngắm hoàng hôn"]
-        },
-        "cantho": {
-            "title": "Cần Thơ",
-            "subtitle": "Đô thị miền Tây và chợ nổi đặc sắc",
-            "hero": "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Cần Thơ nổi tiếng với chợ nổi Cái Răng, bến Ninh Kiều và nét văn hóa sông nước đặc trưng miền Tây.",
-            "places": ["Chợ nổi Cái Răng", "Bến Ninh Kiều", "Nhà cổ Bình Thủy"],
-            "foods": ["Bánh cống", "Lẩu mắm", "Nem nướng"],
-            "activities": ["Đi chợ nổi", "Du thuyền", "Khám phá miệt vườn"]
-        },
-        "angiang": {
-            "title": "An Giang",
-            "subtitle": "Miền sông nước và văn hóa tâm linh",
-            "hero": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop",
-            "intro": "An Giang có núi Sam, rừng tràm Trà Sư và nhiều điểm hành hương nổi tiếng ở miền Tây.",
-            "places": ["Núi Sam", "Rừng tràm Trà Sư", "Châu Đốc"],
-            "foods": ["Bún cá", "Tung lò mò", "Mắm Châu Đốc"],
-            "activities": ["Du lịch sinh thái", "Hành hương", "Đi xuồng"]
-        },
-        "tiengiang": {
-            "title": "Tiền Giang",
-            "subtitle": "Sông nước miệt vườn đậm chất Nam Bộ",
-            "hero": "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Tiền Giang hấp dẫn với du lịch sông nước, cồn Thới Sơn và những vườn trái cây trĩu quả.",
-            "places": ["Cồn Thới Sơn", "Chùa Vĩnh Tràng", "Chợ nổi Cái Bè"],
-            "foods": ["Hủ tiếu Mỹ Tho", "Vú sữa Lò Rèn", "Bánh vá"],
-            "activities": ["Đi thuyền", "Nghe đờn ca tài tử", "Tham quan miệt vườn"]
-        },
-        "bentre": {
-            "title": "Bến Tre",
-            "subtitle": "Xứ dừa thanh bình miền Tây",
-            "hero": "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Bến Tre nổi tiếng với vườn dừa, kênh rạch xanh mát và các sản phẩm đặc trưng từ dừa.",
-            "places": ["Cồn Phụng", "Làng nghề kẹo dừa", "Sân chim Vàm Hồ"],
-            "foods": ["Kẹo dừa", "Đuông dừa", "Cơm dừa"],
-            "activities": ["Đi xuồng", "Tham quan làng nghề", "Du lịch sinh thái"]
-        },
-        "dongthap": {
-            "title": "Đồng Tháp",
-            "subtitle": "Mùa sen, làng hoa và đất lành miền Tây",
-            "hero": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop",
-            "intro": "Đồng Tháp thu hút với làng hoa Sa Đéc, Vườn quốc gia Tràm Chim và mùa sen đặc trưng miền Tây.",
-            "places": ["Làng hoa Sa Đéc", "Tràm Chim", "Khu du lịch Gáo Giồng"],
-            "foods": ["Hủ tiếu Sa Đéc", "Cá lóc nướng trui", "Nem Lai Vung"],
-            "activities": ["Ngắm sen", "Du lịch sinh thái", "Chụp ảnh làng hoa"]
+    try:
+        with open("lichtrinh.json", "r", encoding="utf-8") as f:
+            lichtrinh_data = json.load(f)
+    except Exception as e:
+        st.error(f"Lỗi đọc file lichtrinh.json: {e}")
+        st.stop()
+
+    st.markdown("""
+    <style>
+    .lt-page-wrap{
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px 24px 40px 24px;
+    }
+
+    .lt-title{
+        text-align:center;
+        font-size:38px;
+        font-weight:800;
+        color:#111827;
+        margin-bottom:8px;
+    }
+
+    .lt-subtitle{
+        text-align:center;
+        font-size:17px;
+        color:#6b7280;
+        margin-bottom:26px;
+    }
+
+    /* KHỐI CHỨA 2 Ô FILTER */
+    div[data-testid="stHorizontalBlock"]{
+        max-width: 860px;
+        margin: 0 auto 24px auto;
+    }
+
+    /* Mỗi cột filter */
+    div[data-testid="column"]{
+        padding: 0 6px;
+    }
+
+    /* Label selectbox */
+    div[data-testid="stSelectbox"] label{
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        color: #374151 !important;
+        margin-bottom: 6px !important;
+    }
+
+    /* Khung selectbox */
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div{
+        min-height: 44px !important;
+        border-radius: 12px !important;
+        border: 1px solid #dbe3ee !important;
+        background: #ffffff !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.04) !important;
+        transition: all 0.2s ease;
+    }
+
+    /* Hover / focus */
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:hover{
+        border-color: #1565c0 !important;
+    }
+
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within{
+        border-color: #1565c0 !important;
+        box-shadow: 0 0 0 3px rgba(21,101,192,0.12) !important;
+    }
+
+    /* Chữ trong ô */
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] span{
+        font-size: 14px !important;
+        color: #111827 !important;
+        font-weight: 500 !important;
+    }
+
+    /* Icon dropdown */
+    div[data-testid="stSelectbox"] svg{
+        color: #6b7280 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="lt-page-wrap">', unsafe_allow_html=True)
+    st.markdown('<div class="lt-title">Lịch trình gợi ý</div>', unsafe_allow_html=True)
+    st.markdown('<div class="lt-subtitle">Lựa chọn hành trình phù hợp theo loại hình du lịch tại Lào Cai</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="lt-filter-box">', unsafe_allow_html=True)
+    c1, c2 = st.columns([1, 1], gap="small")
+
+    with c1:
+        selected_category = st.selectbox(
+            "Chọn loại hình",
+            ["Tất cả", "Tâm linh", "Check-in", "Sinh thái", "Văn hóa"],
+            key="lichtrinh_category"
+        )
+
+    with c2:
+        sort_option = st.selectbox(
+            "Sắp xếp chi phí",
+            ["Mặc định", "Chi phí tăng dần", "Chi phí giảm dần"],
+            key="lichtrinh_sort"
+        )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    filtered_data = lichtrinh_data
+    if selected_category != "Tất cả":
+        filtered_data = [item for item in lichtrinh_data if item["category"] == selected_category]
+
+    def extract_price(text):
+        first_part = str(text).split("–")[0]
+        digits = "".join(ch for ch in first_part if ch.isdigit())
+        return int(digits) if digits else 0
+
+    if sort_option == "Chi phí tăng dần":
+        filtered_data = sorted(filtered_data, key=lambda x: extract_price(x["total_price"]))
+    elif sort_option == "Chi phí giảm dần":
+        filtered_data = sorted(filtered_data, key=lambda x: extract_price(x["total_price"]), reverse=True)
+
+    card_css = """
+    <style>
+    body{
+        margin:0;
+        background:transparent;
+        font-family: Arial, sans-serif;
+    }
+
+    .lt-grid{
+        display:grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap:26px;
+        padding:14px 24px 18px 24px;
+        box-sizing:border-box;
+    }
+
+    .lt-card{
+        background:#ffffff;
+        border:1.5px solid #1f1f1f;
+        border-radius:22px;
+        padding:22px 20px 18px 20px;
+        min-height:355px;
+        width:100%;
+        max-width:395px;
+        margin:0 auto;
+        box-sizing:border-box;
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        box-shadow:0 4px 14px rgba(0,0,0,0.04);
+    }
+
+    .lt-route{
+        font-size:15px;
+        font-weight:900;
+        text-transform:uppercase;
+        color:#111827;
+        line-height:1.5;
+        margin-bottom:20px;
+        min-height:48px;
+        letter-spacing:0.2px;
+    }
+
+    .lt-table{
+        display:grid;
+        grid-template-columns: 165px 1fr;
+        row-gap:12px;
+        column-gap:14px;
+        align-items:start;
+    }
+
+    .lt-label{
+        font-size:13px;
+        font-weight:800;
+        color:#111827;
+        line-height:1.55;
+    }
+
+    .lt-value{
+        font-size:13px;
+        font-weight:500;
+        color:#111827;
+        line-height:1.55;
+        word-break:break-word;
+        text-align:left;
+    }
+
+    .lt-bottom{
+        margin-top:22px;
+        display:flex;
+        justify-content:flex-end;
+        align-items:flex-end;
+        gap:8px;
+    }
+
+    .lt-price-label{
+        font-size:13px;
+        font-weight:800;
+        color:#111827;
+        text-align:right;
+        line-height:1.2;
+    }
+
+    .lt-price-value{
+        font-size:16px;
+        font-weight:900;
+        color:#ff3b30;
+        line-height:1.2;
+    }
+
+    @media (max-width: 1200px){
+        .lt-grid{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 
-    data = province_data.get(place)
+    @media (max-width: 700px){
+        .lt-grid{
+            grid-template-columns: 1fr;
+            padding:10px 0 14px 0;
+        }
 
-    if data:
-        detail_html = dedent(f"""
-<div style="max-width:1250px;margin:0 auto 40px auto;background:#fffdf6;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
-    <div style="
-        min-height:430px;
-        background-image:linear-gradient(rgba(0,0,0,0.28), rgba(0,0,0,0.22)), url('{data["hero"]}');
-        background-size:cover;
-        background-position:center;
-        display:flex;
-        flex-direction:column;
-        justify-content:center;
-        align-items:center;
-        text-align:center;
-        color:white;
-        padding:40px 20px;
-    ">
-        <div style="font-size:28px;font-style:italic;">Khám phá</div>
-        <div style="font-size:64px;font-weight:900;line-height:1.1;">{data["title"]}</div>
-        <div style="font-size:24px;margin-top:10px;">{data["subtitle"]}</div>
-    </div>
+        .lt-card{
+            max-width:100%;
+            min-height:auto;
+        }
 
-    <div style="padding:38px 42px;">
-        <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:22px;">
-            <div style="background:white;border-radius:20px;padding:22px;box-shadow:0 6px 18px rgba(0,0,0,0.08);">
-                <div style="font-size:30px;font-weight:800;color:#0f766e;margin-bottom:12px;">Giới thiệu</div>
-                <p style="font-size:18px;line-height:1.8;color:#374151;margin:0;">{data["intro"]}</p>
+        .lt-table{
+            grid-template-columns: 145px 1fr;
+        }
+    }
+    </style>
+    """
+
+    cards_html = '<div class="lt-grid">'
+
+    for item in filtered_data:
+        cards_html += f"""
+        <div class="lt-card">
+            <div>
+                <div class="lt-route">{item['from']} → {item['to']}</div>
+
+                <div class="lt-table">
+                    <div class="lt-label">Quãng đường:</div>
+                    <div class="lt-value">{item['distance_km']}</div>
+
+                    <div class="lt-label">Thời gian:</div>
+                    <div class="lt-value">{item['time_estimate']}</div>
+
+                    <div class="lt-label">Khách sạn/ Nhà nghỉ - giá:</div>
+                    <div class="lt-value">{item['hotel_name']} – {item['hotel_price']}</div>
+
+                    <div class="lt-label">Phương tiện (Xanh SM):</div>
+                    <div class="lt-value">{item['transport_name']}</div>
+
+                    <div class="lt-label">Giá xe:</div>
+                    <div class="lt-value">{item['transport_price']}</div>
+
+                    <div class="lt-label">Giá vé:</div>
+                    <div class="lt-value">{item['ticket_price']}</div>
+                </div>
             </div>
 
-            <div style="background:white;border-radius:20px;padding:22px;box-shadow:0 6px 18px rgba(0,0,0,0.08);">
-                <div style="font-size:30px;font-weight:800;color:#0f766e;margin-bottom:12px;">Địa danh nổi bật</div>
-                <ul style="margin:0;padding-left:22px;font-size:18px;line-height:1.9;color:#374151;">
-                    <li>{data["places"][0]}</li>
-                    <li>{data["places"][1]}</li>
-                    <li>{data["places"][2]}</li>
-                </ul>
-            </div>
-
-            <div style="background:white;border-radius:20px;padding:22px;box-shadow:0 6px 18px rgba(0,0,0,0.08);">
-                <div style="font-size:30px;font-weight:800;color:#92400e;margin-bottom:12px;">Đặc sản</div>
-                <ul style="margin:0;padding-left:22px;font-size:18px;line-height:1.9;color:#374151;">
-                    <li>{data["foods"][0]}</li>
-                    <li>{data["foods"][1]}</li>
-                    <li>{data["foods"][2]}</li>
-                </ul>
-            </div>
-        </div>
-
-        <div style="margin-top:26px;background:white;border-radius:20px;padding:24px;box-shadow:0 6px 18px rgba(0,0,0,0.08);">
-            <div style="font-size:32px;font-weight:800;color:#1565c0;text-align:center;margin-bottom:14px;">Hoạt động thú vị</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;">
-                <div style="background:#f8fafc;border-radius:16px;padding:20px;text-align:center;font-size:22px;font-weight:700;color:#1f2937;">{data["activities"][0]}</div>
-                <div style="background:#f8fafc;border-radius:16px;padding:20px;text-align:center;font-size:22px;font-weight:700;color:#1f2937;">{data["activities"][1]}</div>
-                <div style="background:#f8fafc;border-radius:16px;padding:20px;text-align:center;font-size:22px;font-weight:700;color:#1f2937;">{data["activities"][2]}</div>
+            <div class="lt-bottom">
+                <div class="lt-price-value">{item['transport_price']}</div>
+                <div class="lt-price-label">Giá từ<br>/ Khách</div>
             </div>
         </div>
+        """
 
-        <div style="margin-top:28px;text-align:center;">
-            <a href="?page=home" target="_self" style="display:inline-block;background:#1565c0;color:white;text-decoration:none;padding:13px 26px;border-radius:12px;font-weight:800;font-size:17px;">← Quay lại trang chủ</a>
-        </div>
-    </div>
-</div>
-""")
-        components.html(detail_html, height=950, scrolling=True)
-    else:
-        st.markdown("""
-        <div style="padding:60px 20px;text-align:center;">
-            <div style="font-size:34px;font-weight:800;color:#1565c0;">Chưa có dữ liệu tỉnh này</div>
-            <div style="margin-top:16px;">
-                <a href="?page=home" target="_self" style="
-                    display:inline-block;
-                    background:#1565c0;
-                    color:white;
-                    text-decoration:none;
-                    padding:12px 22px;
-                    border-radius:10px;
-                    font-weight:700;
-                ">← Quay lại trang chủ</a>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    cards_html += "</div>"
+
+    rows = math.ceil(len(filtered_data) / 3) if filtered_data else 1
+    height = max(420, rows * 390)
+
+    components.html(card_css + cards_html, height=height, scrolling=False)
+
+    st.markdown('</div>', unsafe_allow_html=True)
