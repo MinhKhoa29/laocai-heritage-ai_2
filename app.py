@@ -375,13 +375,13 @@ topbar_html = dedent("""
 """)
 st.markdown(topbar_html, unsafe_allow_html=True)
 
-# Navbar
+# Topbar
 navbar_html = dedent(f"""
 <div class="navbar">
     <a class="logo" href="?page=home" target="_self">Lao Cai <span>Heritage AI</span></a>
     <div class="nav-links">
         <a href="?page=home" target="_self" class="{'active' if page == 'home' else ''}">Trang chủ</a>
-        <a href="?page=diemden" target="_self" class="{'active' if page == 'diemden' else ''}">Điểm đến</a>
+        <a href="?page=diemden" target="_self" class="{'active' if page in ['diemden', 'diemden_detail'] else ''}">Điểm đến</a>
         <a href="?page=ai" target="_self" class="{'active' if page == 'ai' else ''}">Trợ lý AI</a>
         <a href="?page=lichtrinh" target="_self" class="{'active' if page == 'lichtrinh' else ''}">Lịch trình</a>
         <a href="?page=lienhe" target="_self" class="{'active' if page == 'lienhe' else ''}">Liên hệ</a>
@@ -2263,60 +2263,1576 @@ elif page == "lichtrinh":
     components.html("""
     <div style="
         max-width: 1320px;
-        margin: 16px auto 60px auto;
+        margin: 18px auto 60px auto;
         padding: 0 4px;
         box-sizing: border-box;
         font-family: Inter, Arial, sans-serif;
     ">
         <div style="
-            position: relative;
-            border-radius: 26px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            align-items: stretch;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 28px rgba(15,23,42,0.08);
             overflow: hidden;
-            min-height: 240px;
-            background-image:
-                linear-gradient(rgba(15,23,42,0.72), rgba(15,23,42,0.72)),
-                url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 18px 38px rgba(15,23,42,0.12);
-            border: 1px solid rgba(255,255,255,0.12);
-            padding: 28px 28px 24px 28px;
-            box-sizing: border-box;
         ">
+            <!-- Khối trái -->
             <div style="
-                position:absolute;
-                top:0;
-                left:0;
-                right:0;
-                height:5px;
-                background:linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
-            "></div>
-
-            <div style="
-                font-size: 24px;
-                font-weight: 900;
-                color: #ffffff;
-                margin-bottom: 16px;
                 position: relative;
-                z-index: 2;
+                min-height: 180px;
+                background: linear-gradient(135deg, #8b0000 0%, #c1121f 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                box-sizing: border-box;
             ">
-                Lưu ý trước khi đặt lịch trình
+                <div style="
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <div style="
+                        width: 135px;
+                        height: 68px;
+                        border: 2px solid rgba(255,255,255,0.95);
+                        color: #ffffff;
+                        font-size: 25px;
+                        font-weight: 800;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transform: rotate(-6deg);
+                        box-shadow: 0 10px 20px rgba(0,0,0,0.18);
+                    ">
+                        LƯU Ý
+                    </div>
+
+                    <div style="
+                        position: absolute;
+                        right: 8px;
+                        bottom: 18px;
+                        font-size: 54px;
+                        line-height: 1;
+                        filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
+                    ">
+                        📢
+                    </div>
+                </div>
             </div>
 
+            <!-- Khối phải -->
             <div style="
-                font-size: 15px;
-                line-height: 1.95;
-                color: rgba(255,255,255,0.95);
-                position: relative;
-                z-index: 2;
-                max-width: 980px;
+                padding: 18px 26px;
+                box-sizing: border-box;
+                background: #ffffff;
+                min-height: 180px;
             ">
-                • Giá hiển thị chỉ mang tính tham khảo tại thời điểm tra cứu.<br>
-                • Lịch trình có thể thay đổi tùy điều kiện thời tiết và vận hành thực tế.<br>
-                • Du khách nên xác nhận lại dịch vụ lưu trú, phương tiện và vé tham quan trước khi khởi hành.<br>
-                • Nên chuẩn bị giấy tờ cá nhân và vật dụng cần thiết cho chuyến đi.<br>
-                • Với mùa cao điểm, nên đặt sớm để đảm bảo chỗ và mức giá tốt hơn.
+                <div style="
+                    font-size: 31px;
+                    font-weight: 800;
+                    color: #111827;
+                    line-height: 1.45;
+                    margin-bottom: 10px;
+                ">
+                    THÔNG BÁO lưu ý khi thực hiện lịch trình du lịch Lào Cai.
+                </div>
+
+                <div style="
+                    font-size: 14px;
+                    color: #64748b;
+                    margin-bottom: 14px;
+                ">
+                    Cập nhật hệ thống • Tham khảo trước khi khởi hành
+                </div>
+
+                <div style="
+                    font-size: 15px;
+                    color: #374151;
+                    line-height: 1.9;
+                    margin-bottom: 14px;
+                ">
+                    Giá hiển thị chỉ mang tính tham khảo tại thời điểm tra cứu. Lịch trình có thể thay đổi tùy điều kiện
+                    thời tiết, tình trạng vận hành thực tế, lưu trú và phương tiện di chuyển. Du khách nên xác nhận lại
+                    khách sạn, vé tham quan, phương tiện và chuẩn bị đầy đủ giấy tờ cá nhân trước chuyến đi.
+                </div>
+
+                <div style="
+                    font-size: 15px;
+                    color: #64748b;
+                    line-height: 1.8;
+                ">
+                    Chuyên mục:
+                    <span style="font-weight: 800; color: #111827;">Lưu ý lịch trình</span>
+                </div>
             </div>
         </div>
     </div>
-    """, height=250, scrolling=False)
+    """, height=230, scrolling=False)
+
+elif page == "diemden":
+    import json
+    import math
+    from html import escape
+    from urllib.parse import quote
+
+    try:
+        with open("diemden.json", "r", encoding="utf-8") as f:
+            diemden_data = json.load(f)
+    except Exception as e:
+        st.error(f"Lỗi đọc file diemden.json: {e}")
+        st.stop()
+
+    def safe_text(value, fallback="Đang cập nhật"):
+        text = str(value).strip() if value is not None else ""
+        return escape(text) if text else escape(fallback)
+
+    def safe_url(value, fallback="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"):
+        text = str(value).strip() if value is not None else ""
+        return escape(text if text else fallback, quote=True)
+
+    def normalize_text(value):
+        return str(value or "").strip().lower()
+
+    def safe_list(value):
+        if isinstance(value, list):
+            return [escape(str(item).strip()) for item in value if str(item).strip()]
+        return []
+
+    place_name_options = ["Tất cả địa điểm"] + sorted({item.get("name", "") for item in diemden_data if item.get("name")})
+    area_options = ["Tất cả"] + sorted({item.get("area", "") for item in diemden_data if item.get("area")})
+    category_options = ["Tất cả"] + sorted({item.get("category", "") for item in diemden_data if item.get("category")})
+    season_options = ["Tất cả"] + sorted({item.get("season", "") for item in diemden_data if item.get("season")})
+
+    total_places = len(diemden_data)
+    total_areas = len(area_options) - 1
+    total_categories = len(category_options) - 1
+
+    hero_title = "Khám phá điểm đến nổi bật tại Lào Cai"
+    hero_subtitle = "Tìm kiếm theo khu vực, loại hình và mùa đẹp để lựa chọn hành trình phù hợp với sở thích của bạn."
+
+    st.markdown("""
+    <style>
+        .dd-hero-section{
+        position: relative;
+        height: 420px;
+        background:
+            linear-gradient(180deg, rgba(7, 19, 37, 0.08) 0%, rgba(7, 19, 37, 0.18) 100%),
+            url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <section class="dd-hero-section"></section>
+    """, unsafe_allow_html=True)
+
+    filtered_data = list(diemden_data)
+    result_count = len(filtered_data)
+
+    st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
+
+    components.html("""
+    <style>
+    body{
+        margin:0;
+        background:transparent;
+        font-family: Inter, Arial, sans-serif;
+    }
+
+    .dd-benefit-wrap{
+        max-width: 1320px;
+        margin: 26px auto 8px auto;
+        padding: 0 6px;
+        box-sizing: border-box;
+        text-align: center;
+    }
+
+    .dd-benefit-title{
+        font-size: 30px;
+        font-weight: 900;
+        color: #111827;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+
+    .dd-benefit-line{
+        width: 86px;
+        height: 4px;
+        background: #f59e0b;
+        border-radius: 999px;
+        margin: 0 auto 16px auto;
+    }
+
+    .dd-benefit-desc{
+        max-width: 760px;
+        margin: 0 auto 28px auto;
+        font-size: 16px;
+        line-height: 1.8;
+        color: #4b5563;
+    }
+
+    .dd-benefit-grid{
+        display:grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap:20px;
+    }
+
+    .dd-benefit-card{
+        background:#ffffff;
+        border:1px solid #e5edf6;
+        border-radius:24px;
+        padding:26px 20px;
+        box-shadow:0 12px 28px rgba(15,23,42,0.06);
+    }
+
+    .dd-benefit-icon{
+        width:72px;
+        height:72px;
+        margin:0 auto 16px auto;
+        border-radius:50%;
+        background:linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:30px;
+        color:#ffffff;
+        box-shadow:0 12px 24px rgba(14,165,233,0.22);
+    }
+
+    .dd-benefit-name{
+        font-size:18px;
+        font-weight:800;
+        color:#111827;
+        margin-bottom:8px;
+    }
+
+    .dd-benefit-text{
+        font-size:14px;
+        line-height:1.75;
+        color:#6b7280;
+    }
+
+    @media (max-width: 980px){
+        .dd-benefit-grid{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 640px){
+        .dd-benefit-wrap{
+            padding: 0 2px;
+        }
+
+        .dd-benefit-title{
+            font-size:24px;
+        }
+
+        .dd-benefit-grid{
+            grid-template-columns: 1fr;
+        }
+    }
+    </style>
+
+    <div class="dd-benefit-wrap">
+        <div class="dd-benefit-title">Vì sao nên khám phá?</div>
+        <div class="dd-benefit-line"></div>
+        <div class="dd-benefit-desc">
+            Từ cảnh đẹp thiên nhiên, bản làng nguyên sơ đến chợ phiên và di tích lịch sử,
+            Lào Cai mang đến trải nghiệm đa dạng và đậm bản sắc vùng cao.
+        </div>
+
+        <div class="dd-benefit-grid">
+            <div class="dd-benefit-card">
+                <div class="dd-benefit-icon">🏞️</div>
+                <div class="dd-benefit-name">Cảnh đẹp nổi bật</div>
+                <div class="dd-benefit-text">Săn mây, đèo cao, ruộng bậc thang và nhiều điểm check-in giàu cảm xúc.</div>
+            </div>
+
+            <div class="dd-benefit-card">
+                <div class="dd-benefit-icon">🏡</div>
+                <div class="dd-benefit-name">Bản sắc bản địa</div>
+                <div class="dd-benefit-text">Khám phá đời sống, nghề thủ công và nhịp sống yên bình của đồng bào vùng cao.</div>
+            </div>
+
+            <div class="dd-benefit-card">
+                <div class="dd-benefit-icon">🏯</div>
+                <div class="dd-benefit-name">Di tích - văn hóa</div>
+                <div class="dd-benefit-text">Nhà thờ cổ, dinh thự, chợ phiên và những không gian lưu giữ giá trị lịch sử.</div>
+            </div>
+
+            <div class="dd-benefit-card">
+                <div class="dd-benefit-icon">🥾</div>
+                <div class="dd-benefit-name">Trải nghiệm đa dạng</div>
+                <div class="dd-benefit-text">Trekking, nghỉ dưỡng, săn ảnh, khám phá ẩm thực và hòa mình vào thiên nhiên.</div>
+            </div>
+        </div>
+    </div>
+    """, height=430, scrolling=False)
+
+    st.markdown(f"""
+    <div style="
+        max-width:1320px;
+        margin: 8px auto 10px auto;
+        padding: 0 8px;
+        box-sizing:border-box;
+    ">
+        <div style="
+            display:flex;
+            align-items:flex-end;
+            justify-content:space-between;
+            gap:16px;
+            flex-wrap:wrap;
+        ">
+            <div>
+                <div style="
+                    font-size:30px;
+                    font-weight:900;
+                    color:#111827;
+                    line-height:1.2;
+                    margin-bottom:6px;
+                ">
+                    Danh sách điểm đến
+                </div>
+                <div style="
+                    font-size:16px;
+                    color:#64748b;
+                    line-height:1.7;
+                ">
+                    Tìm thấy <strong>{result_count}</strong> điểm đến phù hợp với bộ lọc hiện tại.
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    cards_css = """
+    <style>
+    body{
+        margin:0;
+        background:transparent;
+        font-family: Inter, Arial, sans-serif;
+    }
+
+    .dd-results-wrap{
+        max-width: 1320px;
+        margin: 12px auto 60px auto;
+        padding: 0 6px;
+        box-sizing: border-box;
+    }
+
+    .dd-grid{
+        display:grid;
+        grid-template-columns: 1fr;
+        gap:24px;
+    }
+
+    .dd-card{
+        display:grid;
+        grid-template-columns: 320px 1fr;
+        background:#ffffff;
+        border:1px solid #e5edf6;
+        border-radius:26px;
+        overflow:hidden;
+        box-shadow:0 18px 38px rgba(15,23,42,0.08);
+        min-height:260px;
+    }
+
+    .dd-card-image{
+        height:100%;
+        min-height:260px;
+        background-size:cover;
+        background-position:center;
+        position:relative;
+        overflow:hidden;
+    }
+
+    .dd-card-image::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:
+            linear-gradient(
+                to right,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0.10) 45%,
+                rgba(255,255,255,0.42) 68%,
+                rgba(255,255,255,0.78) 84%,
+                #ffffff 100%
+            );
+    }
+
+    .dd-card-body{
+        padding:24px 26px;
+        display:flex;
+        flex-direction:column;
+        min-width:0;
+        gap:18px;
+    }
+
+    .dd-card-header{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:16px;
+    }
+
+    .dd-card-header-main{
+        min-width:0;
+        flex:1;
+    }
+
+    .dd-card-title{
+        font-size:28px;
+        font-weight:900;
+        color:#0f172a;
+        line-height:1.2;
+        margin:0;
+    }
+
+    .dd-card-top{
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+        flex-shrink:0;
+        max-width:40%;
+    }
+
+    .dd-badge{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding:7px 12px;
+        border-radius:999px;
+        background:#ecf5ff;
+        color:#1565c0;
+        font-size:12px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:0.06em;
+        border:1px solid #cfe5ff;
+        white-space:nowrap;
+    }
+
+    .dd-badge-alt{
+        background:#fff7ed;
+        color:#c2410c;
+        border:1px solid #fed7aa;
+    }
+
+    .dd-card-desc{
+        font-size:16px;
+        line-height:1.8;
+        color:#475569;
+        margin-top:-4px;
+    }
+
+    .dd-divider{
+        height:1px;
+        background:#e8eef5;
+        margin:-2px 0 0 0;
+    }
+
+    .dd-info-grid{
+        display:grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap:12px;
+    }
+
+    .dd-info-card{
+        background:#f8fafc;
+        border:1px solid #e6edf5;
+        border-radius:18px;
+        padding:14px 16px;
+    }
+
+    .dd-info-label{
+        font-size:12px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:0.08em;
+        color:#64748b;
+        margin-bottom:6px;
+    }
+
+    .dd-info-value{
+        font-size:15px;
+        line-height:1.6;
+        font-weight:700;
+        color:#0f172a;
+        word-break:break-word;
+    }
+
+    .dd-highlight-wrap{
+        background:linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        border:1px solid #edf2f7;
+        border-radius:18px;
+        padding:14px 16px;
+    }
+
+    .dd-highlight-title{
+        font-size:12px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:0.08em;
+        color:#64748b;
+        margin-bottom:10px;
+    }
+
+    .dd-chip-row{
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+    }
+
+    .dd-chip{
+        background:#f1f5f9;
+        color:#334155;
+        border-radius:999px;
+        padding:8px 12px;
+        font-size:13px;
+        line-height:1.2;
+        font-weight:700;
+        border:1px solid #e2e8f0;
+    }
+
+    .dd-card-footer{
+        display:flex;
+        justify-content:flex-end;
+        margin-top:auto;
+    }
+
+    .dd-detail-link{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-width:148px;
+        padding:12px 18px;
+        border-radius:14px;
+        background:linear-gradient(135deg, #1565c0 0%, #2b7fd3 100%);
+        color:#ffffff !important;
+        text-decoration:none !important;
+        font-size:14px;
+        font-weight:800;
+        letter-spacing:0.02em;
+        box-shadow:0 12px 24px rgba(21,101,192,0.18);
+        transition:transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .dd-detail-link:hover{
+        transform:translateY(-1px);
+        box-shadow:0 16px 28px rgba(21,101,192,0.24);
+    }
+
+    .dd-empty{
+        background:linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border:1px dashed #cbd5e1;
+        border-radius:26px;
+        padding:42px 26px;
+        text-align:center;
+        color:#334155;
+        box-shadow:0 14px 36px rgba(15,23,42,0.05);
+    }
+
+    .dd-empty-title{
+        font-size:26px;
+        font-weight:900;
+        color:#0f172a;
+        margin-bottom:10px;
+    }
+
+    .dd-empty-text{
+        max-width:620px;
+        margin:0 auto;
+        font-size:16px;
+        line-height:1.8;
+        color:#475569;
+    }
+
+    @media (max-width: 980px){
+        .dd-card{
+            grid-template-columns: 260px 1fr;
+        }
+
+        .dd-card-header{
+            flex-direction:column-reverse;
+            align-items:flex-start;
+        }
+
+        .dd-card-top{
+            justify-content:flex-start;
+            max-width:100%;
+        }
+
+        .dd-card-title{
+            font-size:24px;
+        }
+
+        .dd-card-desc{
+            font-size:15px;
+        }
+    }
+
+    @media (max-width: 760px){
+        .dd-results-wrap{
+            padding: 0;
+        }
+
+        .dd-grid{
+            gap:18px;
+        }
+
+        .dd-card{
+            grid-template-columns: 1fr;
+            border-radius:22px;
+        }
+
+        .dd-card-image{
+            min-height:220px;
+        }
+
+        .dd-card-body{
+            padding:20px 18px;
+            gap:16px;
+        }
+
+        .dd-card-title{
+            font-size:22px;
+        }
+
+        .dd-info-grid{
+            grid-template-columns: 1fr;
+        }
+
+        .dd-card-footer{
+            justify-content:stretch;
+        }
+
+        .dd-detail-link{
+            width:100%;
+        }
+
+        .dd-empty-title{
+            font-size:22px;
+        }
+
+        .dd-empty-text{
+            font-size:15px;
+        }
+    }
+    </style>
+    """
+
+    cards_html = '<div class="dd-results-wrap">'
+
+    if filtered_data:
+        cards_html += '<div class="dd-grid">'
+        for item in filtered_data:
+            highlights = safe_list(item.get("highlights"))[:3]
+            highlights_html = "".join([f'<div class="dd-chip">{h}</div>' for h in highlights])
+
+            slug_value = safe_text(item.get("slug"), "dang-cap-nhat")
+            slug_raw = str(item.get("slug", "")).strip()
+            detail_href = f"?page=diemden_detail&slug={quote(slug_raw)}"          
+
+            cards_html += f"""
+            <div class="dd-card">
+                <div class="dd-card-image" style="background-image:url('{safe_url(item.get("image"))}');"></div>
+
+                <div class="dd-card-body">
+                    <div class="dd-card-header">
+                        <div class="dd-card-header-main">
+                            <div class="dd-card-title">{safe_text(item.get("name"))}</div>
+                        </div>
+
+                        <div class="dd-card-top">
+                            <div class="dd-badge">{safe_text(item.get("area"))}</div>
+                            <div class="dd-badge dd-badge-alt">{safe_text(item.get("category"))}</div>
+                        </div>
+                    </div>
+
+                    <div class="dd-card-desc">
+                        {safe_text(item.get("short_desc"), "Điểm đến đang được cập nhật thông tin.")}
+                    </div>
+
+                    <div class="dd-divider"></div>
+
+                    <div class="dd-info-grid">
+                        <div class="dd-info-card">
+                            <div class="dd-info-label">Mùa đẹp</div>
+                            <div class="dd-info-value">{safe_text(item.get("season"), "Quanh năm")}</div>
+                        </div>
+
+                        <div class="dd-info-card">
+                            <div class="dd-info-label">Mã địa điểm</div>
+                            <div class="dd-info-value">{slug_value}</div>
+                        </div>
+                    </div>
+
+                    <div class="dd-highlight-wrap">
+                        <div class="dd-highlight-title">Điểm nổi bật</div>
+                        <div class="dd-chip-row">
+                            {highlights_html}
+                        </div>
+                    </div>
+
+                    <div class="dd-card-footer">
+                        <a class="dd-detail-link"
+                        href="{detail_href}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onclick="window.open('{detail_href}', '_blank', 'noopener,noreferrer'); return false;">
+                            Xem chi tiết
+                        </a>
+                    </div>
+                </div>
+            </div>
+            """
+
+        cards_html += "</div>"
+        rows = result_count if result_count else 1
+        cards_height = max(360, rows * 375)
+    else:
+        cards_html += """
+        <div class="dd-empty">
+            <div class="dd-empty-title">Chưa tìm thấy điểm đến phù hợp</div>
+            <div class="dd-empty-text">
+                Bạn hãy thử đổi từ khóa tìm kiếm hoặc chuyển bộ lọc về <strong>Tất cả</strong>
+                để xem toàn bộ điểm đến đang có trong hệ thống.
+            </div>
+        </div>
+        """
+        cards_height = 320
+
+    cards_html += "</div>"
+    components.html(cards_css + cards_html, height=cards_height, scrolling=False)
+
+elif page == "diemden_detail":
+    import json
+    from html import escape
+    from string import Template
+    import streamlit.components.v1 as components
+
+    try:
+        with open("diemden.json", "r", encoding="utf-8") as f:
+            diemden_data = json.load(f)
+    except Exception as e:
+        st.error(f"Lỗi đọc file diemden.json: {e}")
+        st.stop()
+
+    def clean_text(value):
+        if value is None:
+            return ""
+        return " ".join(str(value).replace("\r", "\n").split())
+
+    def normalize_text(value):
+        return clean_text(value).lower()
+
+    def safe_text(value, fallback="Đang cập nhật"):
+        text = clean_text(value)
+        return escape(text if text else fallback)
+
+    def safe_url(value, fallback="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"):
+        text = str(value).strip() if value is not None else ""
+        return escape(text if text else fallback, quote=True)
+
+    def split_paragraphs(*values):
+        results = []
+        seen = set()
+
+        for value in values:
+            if value is None:
+                continue
+            text = str(value).replace("\r\n", "\n").replace("\r", "\n")
+            parts = [p.strip() for p in text.split("\n") if p.strip()]
+            if not parts and str(value).strip():
+                parts = [str(value).strip()]
+
+            for part in parts:
+                normalized = " ".join(part.split()).strip()
+                if normalized and normalized.lower() not in seen:
+                    seen.add(normalized.lower())
+                    results.append(normalized)
+        return results
+
+    def short_line(text, max_len=150):
+        text = clean_text(text)
+        if not text:
+            return ""
+        if len(text) <= max_len:
+            return text
+        trimmed = text[:max_len].rsplit(" ", 1)[0].strip()
+        return (trimmed if trimmed else text[:max_len]).strip() + "..."
+
+    def get_highlights(value):
+        if isinstance(value, list):
+            return [clean_text(x) for x in value if clean_text(x)]
+        return []
+
+    def get_images(place):
+        fallback = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
+        images = []
+
+        for key in ["image", "image_2", "image_3", "image_4", "image_5", "hero_image", "banner_image"]:
+            val = place.get(key)
+            if isinstance(val, str) and val.strip():
+                images.append(val.strip())
+
+        for key in ["gallery", "images", "detail_images"]:
+            val = place.get(key)
+            if isinstance(val, list):
+                for item in val:
+                    if isinstance(item, str) and item.strip():
+                        images.append(item.strip())
+
+        unique_images = []
+        seen = set()
+        for img in images:
+            if img not in seen:
+                seen.add(img)
+                unique_images.append(img)
+
+        if not unique_images:
+            unique_images = [fallback]
+
+        while len(unique_images) < 6:
+            unique_images.append(unique_images[-1])
+
+        return [safe_url(x, fallback) for x in unique_images[:6]]
+
+    slug = str(st.query_params.get("slug", "")).strip()
+
+    selected_place = None
+    for item in diemden_data:
+        if normalize_text(item.get("slug")) == normalize_text(slug):
+            selected_place = item
+            break
+
+    if not selected_place:
+        st.error("Không tìm thấy địa điểm.")
+        st.stop()
+
+    name_raw = clean_text(selected_place.get("name")) or "Đang cập nhật"
+    area_raw = clean_text(selected_place.get("area"))
+    category_raw = clean_text(selected_place.get("category"))
+    season_raw = clean_text(selected_place.get("season"))
+    best_time_raw = clean_text(selected_place.get("best_time"))
+    short_desc_raw = clean_text(selected_place.get("short_desc"))
+    full_desc_raw = str(selected_place.get("full_desc") or "").strip()
+    slug_raw = clean_text(selected_place.get("slug"))
+
+    name = escape(name_raw)
+    area = safe_text(area_raw)
+    category = safe_text(category_raw)
+    season = safe_text(season_raw)
+    best_time = safe_text(best_time_raw)
+    slug_value = safe_text(slug_raw)
+
+    paragraphs = split_paragraphs(selected_place.get("short_desc"), selected_place.get("full_desc"))
+    highlights = get_highlights(selected_place.get("highlights"))
+
+    intro_1 = paragraphs[0] if len(paragraphs) > 0 else f"{name_raw} là điểm đến đang được cập nhật nội dung chi tiết."
+    intro_2 = paragraphs[1] if len(paragraphs) > 1 else (
+        f"Địa điểm này thuộc khu vực {area_raw or 'Lào Cai'}, phù hợp để tham quan, khám phá và tìm hiểu giá trị địa phương."
+    )
+
+    culture_1 = paragraphs[2] if len(paragraphs) > 2 else (
+        full_desc_raw if full_desc_raw else intro_1
+    )
+    culture_2 = paragraphs[3] if len(paragraphs) > 3 else (
+        f"Thời điểm phù hợp để ghé thăm là {best_time_raw}."
+        if best_time_raw else
+        (f"Mùa đẹp để tham quan là {season_raw}." if season_raw else f"{name_raw} mang lại trải nghiệm khám phá giàu cảm xúc.")
+    )
+
+    standout_text = (
+        f"Điểm nổi bật của {name_raw} gồm: {', '.join(highlights[:4])}."
+        if highlights else
+        f"{name_raw} gây ấn tượng bởi không gian, cảnh quan và trải nghiệm tham quan riêng biệt."
+    )
+
+    visit_text = (
+        f"Khu vực {area_raw or 'địa phương'} phù hợp cho hành trình {category_raw.lower() if category_raw else 'tham quan'}, đặc biệt vào {best_time_raw or season_raw or 'thời điểm thích hợp trong năm'}."
+    )
+
+    hero_kicker = " • ".join([x for x in [area_raw, category_raw] if x]) or "Khám phá điểm đến"
+    hero_subtitle = short_line(short_desc_raw or intro_1, 160)
+
+    images = get_images(selected_place)
+    hero_image = images[0]
+    intro_image_big = images[0]
+    intro_image_small = images[1]
+    card_image_1 = images[2]
+    card_image_2 = images[3]
+    card_image_3 = images[4]
+    culture_image_1 = images[1]
+    culture_image_2 = images[2]
+    culture_image_3 = images[3]
+    standout_image_1 = images[4]
+    standout_image_2 = images[5]
+    standout_image_3 = images[0]
+    standout_image_4 = images[2]
+
+    if highlights:
+        highlight_html = "".join(
+            f'<span class="ddt-chip">{escape(item)}</span>' for item in highlights[:6]
+        )
+    else:
+        highlight_html = '<span class="ddt-chip">Đang cập nhật</span>'
+
+    page_height = 3200 + max(0, len(full_desc_raw) // 500) * 160
+
+    html_template = Template("""
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #f3f3f3;
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #111827;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .ddt-page {
+            background: #f3f3f3;
+            padding-bottom: 70px;
+        }
+
+        .ddt-wrap {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .ddt-hero {
+            position: relative;
+            width: 100%;
+            min-height: 620px;
+            border-radius: 0;
+            overflow: hidden;
+            background-image: url('$hero_image');
+            background-size: cover;
+            background-position: center;
+            box-shadow: none;
+        }
+
+        .ddt-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.34) 65%, rgba(0,0,0,0.42) 100%);
+        }
+
+        .ddt-hero-content {
+            position: relative;
+            z-index: 2;
+            min-height: 560px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 32px;
+            color: #ffffff;
+        }
+
+        .ddt-hero-kicker {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .ddt-script {
+            font-family: "Segoe Script", "Brush Script MT", cursive;
+        }
+
+        .ddt-hero-title {
+            font-size: 72px;
+            line-height: 1.05;
+            font-weight: 800;
+            margin: 0 0 14px 0;
+            text-shadow: 0 4px 18px rgba(0,0,0,0.32);
+        }
+
+        .ddt-hero-subtitle {
+            max-width: 760px;
+            font-size: 19px;
+            line-height: 1.7;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-shadow: 0 3px 14px rgba(0,0,0,0.28);
+        }
+
+        .ddt-section {
+            position: relative;
+            padding: 78px 0 10px 0;
+        }
+
+        .ddt-section::before {
+            content: "";
+            position: absolute;
+            width: 430px;
+            height: 430px;
+            border: 1px solid rgba(15,23,42,0.04);
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow:
+                0 0 0 18px rgba(15,23,42,0.015),
+                0 0 0 38px rgba(15,23,42,0.010);
+            pointer-events: none;
+        }
+
+        .ddt-two-col {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 56px;
+            align-items: center;
+        }
+
+        .ddt-two-col.reverse {
+            grid-template-columns: 0.95fr 1.05fr;
+        }
+
+        .ddt-section-kicker {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+
+        .ddt-section-title {
+            font-size: 58px;
+            line-height: 1.04;
+            margin: 0 0 18px 0;
+            color: #930000;
+            font-weight: 800;
+        }
+
+        .ddt-text {
+            font-size: 17px;
+            line-height: 1.85;
+            color: #374151;
+            margin-bottom: 18px;
+        }
+
+        .ddt-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 98px;
+            padding: 11px 24px;
+            border-radius: 999px;
+            background: #f7b52a;
+            color: #111827;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 800;
+            box-shadow: 0 8px 18px rgba(247,181,42,0.24);
+        }
+
+        .ddt-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 24px 0 22px 0;
+        }
+
+        .ddt-meta-card {
+            background: rgba(255,255,255,0.78);
+            border: 1px solid #e8ebf0;
+            border-radius: 18px;
+            padding: 14px 16px;
+            box-shadow: 0 10px 22px rgba(15,23,42,0.04);
+        }
+
+        .ddt-meta-label {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .ddt-meta-value {
+            font-size: 16px;
+            line-height: 1.6;
+            font-weight: 700;
+            color: #111827;
+            word-break: break-word;
+        }
+
+        .ddt-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .ddt-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 13px;
+            border-radius: 999px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 6px 16px rgba(15,23,42,0.04);
+        }
+
+        .ddt-collage-left {
+            position: relative;
+            min-height: 520px;
+        }
+
+        .ddt-collage-left .main {
+            width: 74%;
+            height: 500px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 16px 36px rgba(15,23,42,0.10);
+        }
+
+        .ddt-collage-left .small {
+            position: absolute;
+            right: 0;
+            top: 110px;
+            width: 40%;
+            height: 290px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 16px 36px rgba(15,23,42,0.12);
+        }
+
+        .ddt-card-section {
+            padding: 56px 0 14px 0;
+        }
+
+        .ddt-center-heading {
+            text-align: center;
+            margin-bottom: 34px;
+        }
+
+        .ddt-card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 30px;
+        }
+
+        .ddt-card {
+            text-align: center;
+        }
+
+        .ddt-card-image {
+            width: 100%;
+            height: 310px;
+            border-radius: 4px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+        }
+
+        .ddt-card-title {
+            margin: 18px 0 10px 0;
+            font-size: 18px;
+            line-height: 1.4;
+            font-weight: 900;
+            color: #0f172a;
+            text-transform: uppercase;
+        }
+
+        .ddt-card-desc {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #475569;
+            max-width: 88%;
+            margin: 0 auto 16px auto;
+        }
+
+        .ddt-mosaic-right {
+            position: relative;
+            min-height: 540px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 330px 140px;
+            gap: 18px;
+        }
+
+        .ddt-mosaic-right .img-a {
+            grid-column: 1 / 3;
+            grid-row: 1 / 2;
+        }
+
+        .ddt-mosaic-right .img-b {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+        }
+
+        .ddt-mosaic-right .img-c {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+        }
+
+        .ddt-mosaic-right .img-a,
+        .ddt-mosaic-right .img-b,
+        .ddt-mosaic-right .img-c {
+            background-size: cover;
+            background-position: center;
+            border-radius: 4px;
+            box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+        }
+
+        .ddt-mosaic-left {
+            position: relative;
+            min-height: 540px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 260px 190px 150px;
+            gap: 18px;
+        }
+
+        .ddt-mosaic-left .img-a {
+            grid-column: 1 / 2;
+            grid-row: 1 / 3;
+        }
+
+        .ddt-mosaic-left .img-b {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+        }
+
+        .ddt-mosaic-left .img-c {
+            grid-column: 1 / 2;
+            grid-row: 3 / 4;
+        }
+
+        .ddt-mosaic-left .img-d {
+            grid-column: 2 / 3;
+            grid-row: 2 / 4;
+        }
+
+        .ddt-mosaic-left .img-a,
+        .ddt-mosaic-left .img-b,
+        .ddt-mosaic-left .img-c,
+        .ddt-mosaic-left .img-d {
+            background-size: cover;
+            background-position: center;
+            border-radius: 4px;
+            box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+        }
+
+        @media (max-width: 1100px) {
+            .ddt-two-col,
+            .ddt-two-col.reverse {
+                grid-template-columns: 1fr;
+                gap: 34px;
+            }
+
+            .ddt-card-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .ddt-card-image {
+                height: 280px;
+            }
+
+            .ddt-hero-title {
+                font-size: 56px;
+            }
+
+            .ddt-section-title {
+                font-size: 48px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .ddt-wrap {
+                padding: 0 14px;
+            }
+
+            .ddt-hero {
+                min-height: 420px;
+                border-radius: 22px;
+            }
+
+            .ddt-hero-content {
+                min-height: 420px;
+                padding: 24px 18px;
+            }
+
+            .ddt-hero-title {
+                font-size: 40px;
+            }
+
+            .ddt-hero-subtitle {
+                font-size: 15px;
+            }
+
+            .ddt-section {
+                padding: 52px 0 4px 0;
+            }
+
+            .ddt-section-title {
+                font-size: 38px;
+            }
+
+            .ddt-text {
+                font-size: 15px;
+            }
+
+            .ddt-meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ddt-collage-left {
+                min-height: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .ddt-collage-left .main,
+            .ddt-collage-left .small {
+                position: relative;
+                width: 100%;
+                height: 240px;
+                top: auto;
+                right: auto;
+            }
+
+            .ddt-mosaic-right,
+            .ddt-mosaic-left {
+                min-height: auto;
+                grid-template-columns: 1fr;
+                grid-template-rows: none;
+            }
+
+            .ddt-mosaic-right .img-a,
+            .ddt-mosaic-right .img-b,
+            .ddt-mosaic-right .img-c,
+            .ddt-mosaic-left .img-a,
+            .ddt-mosaic-left .img-b,
+            .ddt-mosaic-left .img-c,
+            .ddt-mosaic-left .img-d {
+                grid-column: auto;
+                grid-row: auto;
+                height: 220px;
+            }
+        }
+    </style>
+
+    <div class="ddt-page">
+        <section class="ddt-hero">
+            <div class="ddt-hero-content">
+                <h1 class="ddt-hero-title ddt-script">$name</h1>
+                <div class="ddt-hero-subtitle">$hero_subtitle</div>
+            </div>
+        </section>
+
+        <section class="ddt-section" id="gioi-thieu">
+            <div class="ddt-wrap">
+                <div class="ddt-two-col">
+                    <div class="ddt-collage-left">
+                        <div class="main" style="background-image:url('$intro_image_big');"></div>
+                        <div class="small" style="background-image:url('$intro_image_small');"></div>
+                    </div>
+
+                    <div>
+                        <div class="ddt-section-kicker">Về điểm đến</div>
+                        <h2 class="ddt-section-title ddt-script">Giới thiệu</h2>
+
+                        <div class="ddt-text">$intro_1</div>
+                        <div class="ddt-text">$intro_2</div>
+
+                        <div class="ddt-meta-grid">
+                            <div class="ddt-meta-card">
+                                <div class="ddt-meta-label">Khu vực</div>
+                                <div class="ddt-meta-value">$area</div>
+                            </div>
+
+                            <div class="ddt-meta-card">
+                                <div class="ddt-meta-label">Loại hình</div>
+                                <div class="ddt-meta-value">$category</div>
+                            </div>
+
+                            <div class="ddt-meta-card">
+                                <div class="ddt-meta-label">Mùa đẹp</div>
+                                <div class="ddt-meta-value">$season</div>
+                            </div>
+
+                            <div class="ddt-meta-card">
+                                <div class="ddt-meta-label">Mã địa điểm</div>
+                                <div class="ddt-meta-value">$slug_value</div>
+                            </div>
+                        </div>
+
+                        <div class="ddt-chip-row">
+                            $highlight_html
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="ddt-card-section" id="kham-pha">
+            <div class="ddt-wrap">
+                <div class="ddt-center-heading">
+                    <div class="ddt-section-kicker">Đầu tư</div>
+                    <h2 class="ddt-section-title ddt-script">Khám phá</h2>
+                </div>
+
+                <div class="ddt-card-grid">
+                    <div class="ddt-card">
+                        <div class="ddt-card-image" style="background-image:url('$card_image_1');"></div>
+                        <div class="ddt-card-title">Văn hóa, lịch sử</div>
+                        <div class="ddt-card-desc">Tìm hiểu chiều sâu văn hóa và những nét nổi bật gắn với $name.</div>
+                    </div>
+
+                    <div class="ddt-card">
+                        <div class="ddt-card-image" style="background-image:url('$card_image_2');"></div>
+                        <div class="ddt-card-title">Điểm nổi bật</div>
+                        <div class="ddt-card-desc">Khám phá các chi tiết giúp địa điểm này tạo dấu ấn trong hành trình tham quan.</div>
+                    </div>
+
+                    <div class="ddt-card">
+                        <div class="ddt-card-image" style="background-image:url('$card_image_3');"></div>
+                        <div class="ddt-card-title">Thông tin tham quan</div>
+                        <div class="ddt-card-desc">Xem nhanh khu vực, thời điểm phù hợp và gợi ý trải nghiệm trước khi ghé thăm.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="ddt-section" id="van-hoa-lich-su">
+            <div class="ddt-wrap">
+                <div class="ddt-two-col reverse">
+                    <div>
+                        <div class="ddt-section-kicker">Khám phá</div>
+                        <h2 class="ddt-section-title ddt-script">Văn hóa, lịch sử</h2>
+
+                        <div class="ddt-text">$culture_1</div>
+                        <div class="ddt-text">$culture_2</div>
+
+                    </div>
+
+                    <div class="ddt-mosaic-right">
+                        <div class="img-a" style="background-image:url('$culture_image_1');"></div>
+                        <div class="img-b" style="background-image:url('$culture_image_2');"></div>
+                        <div class="img-c" style="background-image:url('$culture_image_3');"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="ddt-section" id="diem-noi-bat">
+            <div class="ddt-wrap">
+                <div class="ddt-two-col">
+                    <div class="ddt-mosaic-left">
+                        <div class="img-a" style="background-image:url('$standout_image_1');"></div>
+                        <div class="img-b" style="background-image:url('$standout_image_2');"></div>
+                        <div class="img-c" style="background-image:url('$standout_image_3');"></div>
+                        <div class="img-d" style="background-image:url('$standout_image_4');"></div>
+                    </div>
+
+                    <div id="tham-quan">
+                        <div class="ddt-section-kicker">Tham quan</div>
+                        <h2 class="ddt-section-title ddt-script">Quần thể di tích</h2>
+
+                        <div class="ddt-text">$standout_text</div>
+                        <div class="ddt-text">$visit_text</div>
+
+                        <div class="ddt-meta-grid">
+                            <div class="ddt-meta-card">
+                                <div class="ddt-meta-label">Thời điểm phù hợp</div>
+                                <div class="ddt-meta-value">$best_time</div>
+                            </div>
+
+                            <div class="ddt-meta-card">
+                                <div class="ddt-meta-label">Mùa tham quan</div>
+                                <div class="ddt-meta-value">$season</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+                             
+        <section class="ddt-section" id="quan-the-di-tich-cuoi">
+            <div class="ddt-wrap">
+                <div class="ddt-two-col">
+                    <div class="ddt-mosaic-left">
+                        <div class="img-a" style="background-image:url('$standout_image_1');"></div>
+                        <div class="img-b" style="background-image:url('$standout_image_2');"></div>
+                        <div class="img-c" style="background-image:url('$standout_image_3');"></div>
+                        <div class="img-d" style="background-image:url('$standout_image_4');"></div>
+                    </div>
+
+                    <div>
+                        <div class="ddt-section-kicker">Tham quan</div>
+                        <h2 class="ddt-section-title ddt-script">Quần thể di tích</h2>
+
+                        <div class="ddt-text">$standout_text</div>
+                        <div class="ddt-text">$visit_text</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    """)
+
+    html_output = html_template.substitute(
+        hero_image=hero_image,
+        hero_kicker=escape(hero_kicker),
+        name=name,
+        hero_subtitle=escape(hero_subtitle),
+        intro_image_big=intro_image_big,
+        intro_image_small=intro_image_small,
+        intro_1=escape(intro_1),
+        intro_2=escape(intro_2),
+        area=area,
+        category=category,
+        season=season,
+        slug_value=slug_value,
+        highlight_html=highlight_html,
+        card_image_1=card_image_1,
+        card_image_2=card_image_2,
+        card_image_3=card_image_3,
+        culture_1=escape(culture_1),
+        culture_2=escape(culture_2),
+        culture_image_1=culture_image_1,
+        culture_image_2=culture_image_2,
+        culture_image_3=culture_image_3,
+        standout_image_1=standout_image_1,
+        standout_image_2=standout_image_2,
+        standout_image_3=standout_image_3,
+        standout_image_4=standout_image_4,
+        standout_text=escape(standout_text),
+        visit_text=escape(visit_text),
+        best_time=best_time
+    )
+
+    components.html(html_output, height=page_height, scrolling=False)

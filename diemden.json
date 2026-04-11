@@ -1,0 +1,272 @@
+[
+  {
+    "id": 1,
+    "name": "Núi Hàm Rồng",
+    "slug": "nui-ham-rong",
+    "area": "Sa Pa",
+    "category": "Check-in",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Điểm ngắm cảnh nổi bật tại Sa Pa với sân mây, vườn hoa bốn mùa và tầm nhìn bao quát thị trấn.",
+    "full_desc": "Núi Hàm Rồng được ví như linh hồn của thị trấn Sa Pa. Từ trên cao, du khách có thể ngắm toàn cảnh thị trấn trong làn sương mờ, đồng thời cảm nhận vẻ đẹp giao hòa giữa thiên nhiên và không gian văn hóa vùng cao.",
+    "highlights": [
+      "Sân mây săn mây sáng sớm",
+      "Vườn hoa bốn mùa",
+      "Các mỏm đá tự nhiên độc đáo"
+    ],
+    "best_time": "Sáng sớm",
+    "tags": ["check-in", "san-may", "sapa"]
+  },
+  {
+    "id": 2,
+    "name": "Đèo Ô Quy Hồ",
+    "slug": "deo-o-quy-ho",
+    "area": "Sa Pa",
+    "category": "Check-in",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Một trong những cung đường đèo hùng vĩ nhất Việt Nam với biển mây, hoàng hôn và nhiều khúc cua ngoạn mục.",
+    "full_desc": "Đèo Ô Quy Hồ là cung đường nổi tiếng của vùng Tây Bắc, mang vẻ đẹp hùng vĩ và huyền bí. Nơi đây được nhiều du khách yêu thích bởi cảnh sắc biến đổi liên tục, một bên nắng, một bên mây phủ.",
+    "highlights": [
+      "Biển mây buổi sáng",
+      "Hoàng hôn trên núi",
+      "Cung đường đèo ngoạn mục"
+    ],
+    "best_time": "Sáng sớm hoặc chiều muộn",
+    "tags": ["check-in", "deo", "bien-may"]
+  },
+  {
+    "id": 3,
+    "name": "Nhà thờ đá Sa Pa",
+    "slug": "nha-tho-da-sapa",
+    "area": "Sa Pa",
+    "category": "Văn hóa",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Công trình kiến trúc cổ mang phong cách Gothic, là biểu tượng lịch sử nổi bật giữa trung tâm Sa Pa.",
+    "full_desc": "Nhà thờ đá Sa Pa là công trình kiến trúc cổ kính tồn tại hơn một thế kỷ, gắn liền với đời sống cộng đồng và nhiều hoạt động văn hóa tại trung tâm thị trấn.",
+    "highlights": [
+      "Kiến trúc đá cổ Gothic",
+      "Quảng trường trung tâm",
+      "Không khí sinh hoạt văn hóa cuối tuần"
+    ],
+    "best_time": "Buổi tối hoặc cuối tuần",
+    "tags": ["van-hoa", "kien-truc", "trung-tam-sapa"]
+  },
+  {
+    "id": 4,
+    "name": "Cổng trời Ô Quy Hồ",
+    "slug": "cong-troi-o-quy-ho",
+    "area": "Sa Pa",
+    "category": "Check-in",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Điểm ngắm dãy Hoàng Liên Sơn và biển mây nổi bật, phù hợp cho trải nghiệm săn ảnh thiên nhiên.",
+    "full_desc": "Cổng trời Ô Quy Hồ là nơi du khách có thể cảm nhận rõ vẻ hùng vĩ của núi rừng Tây Bắc, với tầm nhìn rộng mở hướng ra dãy Hoàng Liên Sơn và biển mây dày đặc.",
+    "highlights": [
+      "Toàn cảnh Hoàng Liên Sơn",
+      "Biển mây dày đặc",
+      "Khoảnh khắc giao thoa ánh sáng đẹp"
+    ],
+    "best_time": "Sáng sớm",
+    "tags": ["check-in", "cong-troi", "hoang-lien-son"]
+  },
+  {
+    "id": 5,
+    "name": "Thác Bạc",
+    "slug": "thac-bac",
+    "area": "Sa Pa",
+    "category": "Sinh thái",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1522163182402-834f871fd851?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Dòng thác trắng xóa giữa núi rừng, mang vẻ đẹp mạnh mẽ và không khí mát lạnh quanh năm.",
+    "full_desc": "Thác Bạc là điểm đến sinh thái nổi tiếng tại Sa Pa, với dòng nước đổ từ trên cao tạo nên khung cảnh hùng vĩ và thanh mát. Đây là nơi phù hợp để ngắm cảnh và thư giãn giữa thiên nhiên.",
+    "highlights": [
+      "Dòng thác chính hùng vĩ",
+      "Không khí mát lạnh",
+      "Cầu ngắm cảnh giữa thác"
+    ],
+    "best_time": "Ban ngày",
+    "tags": ["sinh-thai", "thac", "sapa"]
+  },
+  {
+    "id": 6,
+    "name": "Thác Tình Yêu",
+    "slug": "thac-tinh-yeu",
+    "area": "Sa Pa",
+    "category": "Sinh thái",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Thác nước thơ mộng nằm trong rừng xanh, gắn với truyền thuyết tình yêu và cung trekking đẹp.",
+    "full_desc": "Thác Tình Yêu mang vẻ đẹp dịu dàng, yên tĩnh và giàu chất thơ. Đây là điểm đến phù hợp cho du khách muốn kết hợp đi bộ nhẹ, ngắm rừng và tận hưởng không gian mát lành.",
+    "highlights": [
+      "Đường trekking xuyên rừng",
+      "Dòng thác mềm mại",
+      "Không gian yên tĩnh"
+    ],
+    "best_time": "Sáng hoặc chiều",
+    "tags": ["sinh-thai", "thac", "trekking"]
+  },
+  {
+    "id": 7,
+    "name": "Hang Tiên",
+    "slug": "hang-tien",
+    "area": "Lào Cai",
+    "category": "Sinh thái",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Không gian hang động huyền ảo với hệ thống thạch nhũ đẹp và ánh sáng tự nhiên ấn tượng.",
+    "full_desc": "Hang Tiên gây ấn tượng bởi vẻ đẹp bí ẩn, hệ thống thạch nhũ đa dạng và không gian rộng lớn như một thế giới khác dưới lòng đất.",
+    "highlights": [
+      "Thạch nhũ độc đáo",
+      "Không gian rộng lớn",
+      "Hiệu ứng ánh sáng tự nhiên"
+    ],
+    "best_time": "Ban ngày",
+    "tags": ["sinh-thai", "hang-dong", "kham-pha"]
+  },
+  {
+    "id": 8,
+    "name": "Suối Mường Vi",
+    "slug": "suoi-muong-vi",
+    "area": "Lào Cai",
+    "category": "Sinh thái",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Điểm đến yên bình với dòng suối trong vắt, không gian hoang sơ và cảnh núi rừng thư giãn.",
+    "full_desc": "Suối Mường Vi mang vẻ đẹp mộc mạc, tĩnh lặng và gần gũi với thiên nhiên, phù hợp cho những ai muốn tìm một không gian nghỉ ngơi nhẹ nhàng.",
+    "highlights": [
+      "Dòng suối trong vắt",
+      "Cảnh quan hoang sơ",
+      "Không gian nghỉ ngơi yên tĩnh"
+    ],
+    "best_time": "Ban ngày",
+    "tags": ["sinh-thai", "suoi", "thu-gian"]
+  },
+  {
+    "id": 9,
+    "name": "Chợ Cốc Ly",
+    "slug": "cho-coc-ly",
+    "area": "Bắc Hà",
+    "category": "Văn hóa",
+    "season": "Thứ 3 hằng tuần",
+    "image": "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Phiên chợ vùng cao mang đậm bản sắc văn hóa cộng đồng và không khí giao duyên đặc trưng.",
+    "full_desc": "Chợ Cốc Ly là chợ vùng cao đặc sắc của Bắc Hà, nơi gặp gỡ, trao đổi hàng hóa và lưu giữ nhiều giá trị văn hóa cộng đồng của đồng bào dân tộc vùng cao.",
+    "highlights": [
+      "Họp chợ vào thứ 3",
+      "Văn hóa giao duyên vùng cao",
+      "Có thể kết hợp đi thuyền trên sông Chảy"
+    ],
+    "best_time": "Sáng thứ 3",
+    "tags": ["van-hoa", "cho-phien", "bac-ha"]
+  },
+  {
+    "id": 10,
+    "name": "Chợ phiên Bắc Hà",
+    "slug": "cho-phien-bac-ha",
+    "area": "Bắc Hà",
+    "category": "Văn hóa",
+    "season": "Chủ nhật hằng tuần",
+    "image": "https://images.unsplash.com/photo-1523906630133-f6934a1ab2b9?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Một trong những phiên chợ nổi tiếng nhất vùng cao Tây Bắc với sắc màu văn hóa dân tộc đặc sắc.",
+    "full_desc": "Chợ phiên Bắc Hà là điểm đến văn hóa nổi bật của Lào Cai, nơi du khách có thể khám phá đời sống vùng cao, ẩm thực bản địa, thổ cẩm và nhiều hoạt động giao lưu độc đáo.",
+    "highlights": [
+      "Họp vào Chủ nhật",
+      "Ẩm thực thắng cố, rượu ngô",
+      "Đồ thổ cẩm và không khí chợ vùng cao"
+    ],
+    "best_time": "Sáng Chủ nhật",
+    "tags": ["van-hoa", "cho-phien", "am-thuc"]
+  },
+  {
+    "id": 11,
+    "name": "Phố cổ Bắc Hà",
+    "slug": "pho-co-bac-ha",
+    "area": "Bắc Hà",
+    "category": "Văn hóa",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Khu vực lõi lịch sử của Bắc Hà với nhịp sống chậm, nét cổ kính và không gian đậm bản sắc cao nguyên trắng.",
+    "full_desc": "Phố cổ Bắc Hà mang vẻ đẹp mộc mạc, cổ kính và đậm chất văn hóa vùng cao. Đây là nơi lý tưởng để cảm nhận nhịp sống chậm, kiến trúc truyền thống và không khí sinh hoạt cộng đồng địa phương.",
+    "highlights": [
+      "Không gian phố núi cổ",
+      "Văn nghệ cuối tuần",
+      "Mùa hoa mận và lễ hội đua ngựa"
+    ],
+    "best_time": "Cuối tuần hoặc mùa hoa mận",
+    "tags": ["van-hoa", "pho-co", "bac-ha"]
+  },
+  {
+    "id": 12,
+    "name": "Dinh thự Hoàng A Tưởng",
+    "slug": "dinh-thu-hoang-a-tuong",
+    "area": "Bắc Hà",
+    "category": "Di tích",
+    "season": "Quanh năm",
+    "image": "https://images.unsplash.com/photo-1511818966892-d7d671e672a2?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Công trình kiến trúc Á - Âu độc đáo, bề thế và là một dấu ấn lịch sử nổi bật của Bắc Hà.",
+    "full_desc": "Dinh thự Hoàng A Tưởng là địa điểm nổi tiếng tại Bắc Hà nhờ kiến trúc kết hợp Đông - Tây độc đáo, quy mô lớn và giá trị lịch sử đặc biệt giữa vùng cao nguyên trắng.",
+    "highlights": [
+      "Kiến trúc Á - Âu",
+      "Khuôn viên rộng lớn",
+      "Dấu ấn lịch sử Bắc Hà"
+    ],
+    "best_time": "Ban ngày",
+    "tags": ["di-tich", "kien-truc", "bac-ha"]
+  },
+  {
+    "id": 13,
+    "name": "Bản Má Tra",
+    "slug": "ban-ma-tra",
+    "area": "Sa Pa",
+    "category": "Bản làng",
+    "season": "Mùa lúa xanh hoặc lúa chín",
+    "image": "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Bản làng yên bình gần trung tâm Sa Pa, nổi bật với ruộng bậc thang và đời sống văn hóa người H'Mông.",
+    "full_desc": "Bản Má Tra mang vẻ đẹp nguyên sơ, gần gũi và yên bình, là nơi phù hợp để khám phá nếp sống bản địa, ruộng bậc thang và trải nghiệm văn hóa người H'Mông.",
+    "highlights": [
+      "Ruộng bậc thang đẹp theo mùa",
+      "Nhà gỗ truyền thống",
+      "Trải nghiệm dệt thổ cẩm"
+    ],
+    "best_time": "Mùa lúa xanh hoặc lúa chín",
+    "tags": ["ban-lang", "van-hoa", "sapa"]
+  },
+  {
+    "id": 14,
+    "name": "Bản Sín Chải",
+    "slug": "ban-sin-chai",
+    "area": "Sa Pa",
+    "category": "Bản làng",
+    "season": "Tháng 4-5, tháng 9-10, tháng 12-1",
+    "image": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Bản làng lớn của người H'Mông với không gian yên bình, ruộng bậc thang và trải nghiệm trekking hấp dẫn.",
+    "full_desc": "Bản Sín Chải là điểm đến thích hợp cho du khách yêu thiên nhiên và muốn tìm lại cảm giác bình yên giữa núi rừng, đồng thời khám phá cuộc sống của cộng đồng người H'Mông.",
+    "highlights": [
+      "Trekking đường bản",
+      "Không gian núi rừng thanh bình",
+      "Ruộng bậc thang thay màu theo mùa"
+    ],
+    "best_time": "Tháng 4-5 hoặc 9-10",
+    "tags": ["ban-lang", "trekking", "sapa"]
+  },
+  {
+    "id": 15,
+    "name": "Lao Chải - Tả Van",
+    "slug": "lao-chai-ta-van",
+    "area": "Sa Pa",
+    "category": "Bản làng",
+    "season": "Tháng 9-10",
+    "image": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop",
+    "short_desc": "Cụm bản làng nổi tiếng ở thung lũng Mường Hoa với ruộng bậc thang, suối đẹp và trải nghiệm homestay, trekking.",
+    "full_desc": "Lao Chải - Tả Van là điểm đến nổi bật của Sa Pa dành cho những ai yêu trekking, nghỉ dưỡng bản địa và khám phá văn hóa dân tộc giữa khung cảnh thiên nhiên nguyên sơ.",
+    "highlights": [
+      "Ruộng bậc thang Mường Hoa",
+      "Trekking qua bản",
+      "Homestay và văn hóa bản địa"
+    ],
+    "best_time": "Tháng 9-10",
+    "tags": ["ban-lang", "trekking", "muong-hoa"]
+  }
+]
