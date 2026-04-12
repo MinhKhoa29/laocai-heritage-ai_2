@@ -3,9 +3,40 @@
 # git commit -m "mô tả thay đổi"
 # git push
 
+import os
+import re
+import unicodedata
+import json as pyjson
 import streamlit as st
 import streamlit.components.v1 as components
+
 from textwrap import dedent
+from html import escape
+from google import genai
+from google.genai import types
+
+import base64
+
+def image_to_data_uri(candidates):
+    mime_map = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+    }
+
+    for path in candidates:
+        if path and os.path.exists(path):
+            ext = os.path.splitext(path)[1].lower()
+            mime = mime_map.get(ext, "image/png")
+            try:
+                with open(path, "rb") as f:
+                    encoded = base64.b64encode(f.read()).decode("utf-8")
+                return f"data:{mime};base64,{encoded}"
+            except Exception:
+                pass
+
+    return ""
 
 st.set_page_config(
     page_title="LAO CAI HERITAGE AI",
@@ -14,6 +45,395 @@ st.set_page_config(
 )
 
 page = st.query_params.get("page", "home")
+
+
+# ChatBot
+def _load_json_safe(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = pyjson.load(f)
+            return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+def _build_chatbot_payload():
+    diemden = _load_json_safe("diemden.json")
+    lichtrinh = _load_json_safe("lichtrinh.json")
+
+    places = []
+    for item in diemden[:120]:
+        highlights = item.get("highlights", [])
+        if not isinstance(highlights, list):
+            highlights = []
+
+        places.append({
+            "name": str(item.get("name", "")).strip(),
+            "slug": str(item.get("slug", "")).strip(),
+            "area": str(item.get("area", "")).strip(),
+            "category": str(item.get("category", "")).strip(),
+            "season": str(item.get("season", "")).strip(),
+            "best_time": str(item.get("best_time", "")).strip(),
+            "short_desc": str(item.get("short_desc", "")).strip(),
+            "full_desc": str(item.get("full_desc", "")).strip(),
+            "image": str(item.get("image", "")).strip(),
+            "highlights": [str(x).strip() for x in highlights[:5] if str(x).strip()]
+        })
+
+    routes = []
+    for item in lichtrinh[:150]:
+        routes.append({
+            "from": str(item.get("from", "")).strip(),
+            "to": str(item.get("to", "")).strip(),
+            "slug": str(item.get("slug", "")).strip(),
+            "category": str(item.get("category", "")).strip(),
+            "time_estimate": str(item.get("time_estimate", "")).strip(),
+            "distance_km": str(item.get("distance_km", "")).strip(),
+            "transport_name": str(item.get("transport_name", "")).strip(),
+            "transport_price": str(item.get("transport_price", "")).strip(),
+            "ticket_price": str(item.get("ticket_price", "")).strip(),
+            "hotel_name": str(item.get("hotel_name", "")).strip(),
+            "hotel_price": str(item.get("hotel_price", "")).strip(),
+            "total_price": str(item.get("total_price", "")).strip(),
+            "note": str(item.get("note", "")).strip(),
+            "short_desc": str(item.get("short_desc", "")).strip()
+        })
+
+    return {
+        "brand": "Lao Cai Heritage AI",
+        "phone": "0346 538 917",
+        "places": places,
+        "routes": routes,
+        "quick_questions": [
+            "Sa Pa có gì đẹp?",
+            "Mùa nào đi Fansipan đẹp?",
+            "Gợi ý lịch trình đi Bắc Hà",
+            "Chi phí tham khảo thế nào?"
+        ]
+    }
+
+CHATBOT_PAYLOAD = _build_chatbot_payload()
+
+GEMINI_MODEL = "gemini-2.5-flash"
+
+def normalize_query_text(value: str) -> str:
+    text = str(value or "").strip().lower()
+    text = text.replace("đ", "d").replace("Đ", "D")
+    text = unicodedata.normalize("NFD", text)
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    return text
+
+def tokenize_query(value: str) -> list[str]:
+    text = normalize_query_text(value)
+    return [tok for tok in re.split(r"[^a-zA-Z0-9]+", text) if len(tok) >= 2]
+
+def score_item(fields, tokens: list[str]) -> int:
+    joined = " ".join(str(x or "") for x in fields)
+    norm = normalize_query_text(joined)
+    score = 0
+
+    for tok in tokens:
+        if tok in norm:
+            score += 3
+
+    return score
+
+def build_context_from_payload(question: str, payload: dict, current_page: str) -> str:
+    tokens = tokenize_query(question)
+
+    places_ranked = []
+    for item in payload.get("places", []):
+        fields = [
+            item.get("name"),
+            item.get("area"),
+            item.get("category"),
+            item.get("season"),
+            item.get("best_time"),
+            item.get("short_desc"),
+            item.get("full_desc"),
+            " ".join(item.get("highlights", [])) if isinstance(item.get("highlights"), list) else ""
+        ]
+        score = score_item(fields, tokens)
+
+        # cộng điểm mạnh nếu user nhắc đúng tên địa điểm
+        name_norm = normalize_query_text(item.get("name", ""))
+        q_norm = normalize_query_text(question)
+        if name_norm and name_norm in q_norm:
+            score += 8
+
+        if score > 0:
+            places_ranked.append((score, item))
+
+    routes_ranked = []
+    for item in payload.get("routes", []):
+        fields = [
+            item.get("from"),
+            item.get("to"),
+            item.get("category"),
+            item.get("time_estimate"),
+            item.get("distance_km"),
+            item.get("transport_name"),
+            item.get("transport_price"),
+            item.get("ticket_price"),
+            item.get("hotel_name"),
+            item.get("hotel_price"),
+            item.get("total_price"),
+            item.get("note"),
+            item.get("short_desc"),
+        ]
+        score = score_item(fields, tokens)
+
+        to_norm = normalize_query_text(item.get("to", ""))
+        q_norm = normalize_query_text(question)
+        if to_norm and to_norm in q_norm:
+            score += 8
+
+        if score > 0:
+            routes_ranked.append((score, item))
+
+    places_ranked.sort(key=lambda x: x[0], reverse=True)
+    routes_ranked.sort(key=lambda x: x[0], reverse=True)
+
+    top_places = [item for _, item in places_ranked[:5]]
+    top_routes = [item for _, item in routes_ranked[:5]]
+
+    lines = []
+    lines.append(f"Trang hiện tại: {current_page}")
+    lines.append(f"Tổng số địa điểm trong hệ thống: {len(payload.get('places', []))}")
+    lines.append(f"Tổng số lịch trình trong hệ thống: {len(payload.get('routes', []))}")
+    lines.append("")
+
+    if top_places:
+        lines.append("ĐỊA ĐIỂM LIÊN QUAN:")
+        for i, p in enumerate(top_places, 1):
+            highlights = p.get("highlights", [])
+            if not isinstance(highlights, list):
+                highlights = []
+
+            lines.append(
+                f"{i}. Tên: {p.get('name', 'Đang cập nhật')} | "
+                f"Khu vực: {p.get('area', 'Đang cập nhật')} | "
+                f"Loại hình: {p.get('category', 'Đang cập nhật')} | "
+                f"Mùa đẹp: {p.get('season', 'Đang cập nhật')} | "
+                f"Thời điểm đẹp: {p.get('best_time', 'Đang cập nhật')} | "
+                f"Mô tả ngắn: {p.get('short_desc', 'Đang cập nhật')} | "
+                f"Nổi bật: {', '.join(highlights[:5]) if highlights else 'Đang cập nhật'}"
+            )
+        lines.append("")
+
+    if top_routes:
+        lines.append("LỊCH TRÌNH LIÊN QUAN:")
+        for i, r in enumerate(top_routes, 1):
+            lines.append(
+                f"{i}. Từ: {r.get('from', 'Đang cập nhật')} | "
+                f"Đến: {r.get('to', 'Đang cập nhật')} | "
+                f"Loại hình: {r.get('category', 'Đang cập nhật')} | "
+                f"Thời gian: {r.get('time_estimate', 'Đang cập nhật')} | "
+                f"Quãng đường: {r.get('distance_km', 'Đang cập nhật')} | "
+                f"Phương tiện: {r.get('transport_name', 'Đang cập nhật')} | "
+                f"Giá xe: {r.get('transport_price', 'Đang cập nhật')} | "
+                f"Vé tham quan: {r.get('ticket_price', 'Đang cập nhật')} | "
+                f"Khách sạn: {r.get('hotel_name', 'Đang cập nhật')} | "
+                f"Giá khách sạn: {r.get('hotel_price', 'Đang cập nhật')} | "
+                f"Tổng chi phí: {r.get('total_price', 'Đang cập nhật')} | "
+                f"Ghi chú: {r.get('note', 'Đang cập nhật')}"
+            )
+        lines.append("")
+
+    if not top_places and not top_routes:
+        lines.append("Không tìm thấy mục nào khớp mạnh trong dữ liệu nội bộ.")
+        lines.append("Khi trả lời, hãy nói rõ dữ liệu hệ thống chưa có thông tin đủ cụ thể.")
+
+    return "\n".join(lines)
+
+def build_history_text(messages: list[dict], limit: int = 8) -> str:
+    recent = messages[-limit:] if messages else []
+    lines = []
+
+    for msg in recent:
+        role = "Người dùng" if msg.get("role") == "user" else "Trợ lý"
+        content = str(msg.get("content", "")).strip()
+        if content:
+            lines.append(f"{role}: {content}")
+
+    return "\n".join(lines) if lines else "Chưa có lịch sử hội thoại."
+
+def ask_gemini(user_message: str, payload: dict, current_page: str, messages: list[dict]) -> str:
+    route_mode = route_question(user_message)
+
+    if route_mode == "internal":
+        api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+        if not api_key:
+            return "Bạn chưa cấu hình GEMINI_API_KEY."
+
+        try:
+            client = genai.Client(api_key=api_key)
+
+            context_text = build_context_from_payload(user_message, payload, current_page)
+            history_text = build_history_text(messages, limit=8)
+
+            prompt = f"""
+DỮ LIỆU NỘI BỘ:
+{context_text}
+
+LỊCH SỬ HỘI THOẠI GẦN ĐÂY:
+{history_text}
+
+CÂU HỎI MỚI CỦA NGƯỜI DÙNG:
+{user_message}
+""".strip()
+
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=(
+                        "Bạn là Lao Cai Heritage AI, trợ lý du lịch thông minh cho website giới thiệu "
+                        "địa điểm, lịch trình và văn hóa Lào Cai. "
+                        "Chỉ ưu tiên dữ liệu nội bộ được cung cấp trong prompt. "
+                        "Không bịa thông tin. Nếu dữ liệu hệ thống chưa có, hãy nói rõ là chưa có trong hệ thống. "
+                        "Trả lời bằng tiếng Việt, ngắn gọn, đúng trọng tâm, dễ hiểu. "
+                        "Ưu tiên trả lời theo dạng tư vấn thực tế cho khách du lịch. "
+                        "Khi phù hợp, gợi ý thêm 1 đến 2 câu hỏi tiếp theo. "
+                        "Không nói rằng bạn là Gemini hay Google."
+                    ),
+                    temperature=0.35,
+                    max_output_tokens=500,
+                ),
+            )
+
+            answer = (response.text or "").strip()
+            if answer:
+                return answer
+
+            return "Mình chưa tạo được câu trả lời phù hợp. Bạn hãy hỏi lại ngắn gọn hơn."
+
+        except Exception as e:
+            error_text = str(e)
+
+            if "429" in error_text or "RESOURCE_EXHAUSTED" in error_text.upper():
+                return "Gemini đang báo hết quota hoặc vượt giới hạn tốc độ ở API key hiện tại."
+
+            if "API key" in error_text or "api_key" in error_text.lower():
+                return "API key Gemini chưa đúng hoặc chưa được cấp quyền."
+
+            return f"Lỗi Gemini: {error_text}"
+
+    if route_mode in ["search", "hybrid"]:
+        return ask_gemini_search(
+            user_message=user_message,
+            payload=payload,
+            current_page=current_page,
+            messages=messages
+        )
+
+    return "Mình chưa xác định được kiểu câu hỏi."
+    
+
+def route_question(user_message: str) -> str:
+    q = normalize_query_text(user_message)
+
+    search_keywords = [
+        "hom nay", "hien tai", "moi nhat", "gan day", "tin tuc", "thoi tiet",
+        "su kien", "le hoi", "gia ve", "gio mo cua", "lich mo cua", "cap nhat",
+        "nam nay", "thang nay", "tuan nay"
+    ]
+
+    external_keywords = [
+        "o dau", "dia chi", "di chuyen", "duong di", "review", "danh gia",
+        "an gi", "khach san nao", "quan an", "cafe", "gan", "xung quanh"
+    ]
+
+    internal_score = 0
+    for item in CHATBOT_PAYLOAD.get("places", []):
+        name_norm = normalize_query_text(item.get("name", ""))
+        if name_norm and name_norm in q:
+            internal_score += 2
+
+    for item in CHATBOT_PAYLOAD.get("routes", []):
+        to_norm = normalize_query_text(item.get("to", ""))
+        if to_norm and to_norm in q:
+            internal_score += 2
+
+    if any(k in q for k in search_keywords):
+        return "search"
+
+    if any(k in q for k in external_keywords):
+        return "search"
+
+    if internal_score > 0:
+        return "internal"
+
+    return "hybrid"
+
+
+def ask_gemini_search(user_message: str, payload: dict, current_page: str, messages: list[dict]) -> str:
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return "Bạn chưa cấu hình GEMINI_API_KEY."
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        context_text = build_context_from_payload(user_message, payload, current_page)
+        history_text = build_history_text(messages, limit=8)
+
+        prompt = f"""
+DỮ LIỆU NỘI BỘ THAM KHẢO:
+{context_text}
+
+LỊCH SỬ HỘI THOẠI GẦN ĐÂY:
+{history_text}
+
+CÂU HỎI MỚI CỦA NGƯỜI DÙNG:
+{user_message}
+
+YÊU CẦU:
+- Ưu tiên dữ liệu nội bộ nếu đã có.
+- Nếu dữ liệu nội bộ chưa đủ hoặc câu hỏi cần thông tin mới, hãy dùng Google Search để bổ sung.
+- Phân biệt rõ:
+  1. Thông tin từ hệ thống
+  2. Thông tin tham khảo từ web
+- Không bịa chi tiết cụ thể.
+""".strip()
+
+        grounding_tool = types.Tool(
+            google_search=types.GoogleSearch()
+        )
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                tools=[grounding_tool],
+                system_instruction=(
+                    "Bạn là Lao Cai Heritage AI, trợ lý du lịch thông minh cho website du lịch Lào Cai. "
+                    "Khi có dữ liệu nội bộ trong prompt, hãy ưu tiên dùng trước. "
+                    "Khi cần thông tin mới hoặc ngoài hệ thống, hãy dùng Google Search. "
+                    "Trả lời bằng tiếng Việt, ngắn gọn, dễ hiểu, thực tế. "
+                    "Nếu có thông tin lấy từ web, ghi rõ đó là thông tin tham khảo mới cập nhật. "
+                    "Không nói rằng bạn là Gemini hay Google."
+                ),
+                temperature=0.35,
+                max_output_tokens=700,
+            ),
+        )
+
+        answer = (response.text or "").strip()
+        if answer:
+            return answer
+
+        return "Mình chưa lấy được câu trả lời phù hợp từ web. Bạn hãy hỏi cụ thể hơn."
+
+    except Exception as e:
+        error_text = str(e)
+
+        if "429" in error_text or "RESOURCE_EXHAUSTED" in error_text.upper():
+            return "Gemini đang báo hết quota hoặc vượt giới hạn tốc độ ở API key hiện tại."
+
+        if "API key" in error_text or "api_key" in error_text.lower():
+            return "API key Gemini chưa đúng hoặc chưa được cấp quyền."
+
+        return f"Lỗi Gemini Search: {error_text}"
 
 # CSS trang chủ
 st.markdown("""
@@ -382,8 +802,9 @@ navbar_html = dedent(f"""
     <div class="nav-links">
         <a href="?page=home" target="_self" class="{'active' if page == 'home' else ''}">Trang chủ</a>
         <a href="?page=diemden" target="_self" class="{'active' if page in ['diemden', 'diemden_detail'] else ''}">Điểm đến</a>
-        <a href="?page=ai" target="_self" class="{'active' if page == 'ai' else ''}">Trợ lý AI</a>
         <a href="?page=lichtrinh" target="_self" class="{'active' if page in ['lichtrinh', 'lichtrinh_detail'] else ''}">Lịch trình</a>
+        <a href="?page=chatbot" target="_self" class="{'active' if page == 'chatbot' else ''}">Chatbot AI</a>
+        <a href="?page=gioithieu" target="_self" class="{'active' if page == 'gioithieu' else ''}">Về dự án</a>
     </div>
 </div>
 """)
@@ -1427,171 +1848,471 @@ if page == "home":
     """), height=900, scrolling=False)
 
     # Footer
-    st.markdown(dedent("""
-    <div style="
-    background:#dceaf7;
-    padding:45px 80px;
-    margin-top:50px;
-    ">
-    <div style="
-    display:grid;
-    grid-template-columns: 1.2fr 1fr 1fr 1fr;
-    gap:40px;
-    align-items:start;
-    ">
+    home_logo_src = image_to_data_uri([
+        "assets/anime_teamtrangchu.png",
+        "anime_teamtrangchu.png",
+        "assets/anime_teamtrangchu.jpg",
+        "anime_teamtrangchu.jpg",
+        "assets/anime_teamtrangchu.jpeg",
+        "anime_teamtrangchu.jpeg",
+        "assets/anime_teamtrangchu.webp",
+        "anime_teamtrangchu.webp"
+    ]) or "https://dummyimage.com/400x400/f8fafc/94a3b8.png&text=LOGO"
 
-    <div>
-    <div style="font-size:26px;font-weight:800;margin-bottom:18px;color:#111827;">
-    Liên hệ
+    vitri_icon_src = image_to_data_uri([
+        "assets/vitri.png", "vitri.png",
+        "assets/vitri.jpg", "vitri.jpg",
+        "assets/vitri.jpeg", "vitri.jpeg",
+        "assets/vitri.webp", "vitri.webp"
+    ])
+
+    email_icon_src = image_to_data_uri([
+        "assets/email.png", "email.png",
+        "assets/email.jpg", "email.jpg",
+        "assets/email.jpeg", "email.jpeg",
+        "assets/email.webp", "email.webp"
+    ])
+
+    dienthoai_icon_src = image_to_data_uri([
+        "assets/dienthoai.png", "dienthoai.png",
+        "assets/dienthoai.jpg", "dienthoai.jpg",
+        "assets/dienthoai.jpeg", "dienthoai.jpeg",
+        "assets/dienthoai.webp", "dienthoai.webp"
+    ])
+
+    facebook_icon_src = image_to_data_uri([
+        "assets/facebook.png", "facebook.png",
+        "assets/facebook.jpg", "facebook.jpg",
+        "assets/facebook.jpeg", "facebook.jpeg",
+        "assets/facebook.webp", "facebook.webp"
+    ])
+
+    tiktok_icon_src = image_to_data_uri([
+        "assets/tiktok.png", "tiktok.png",
+        "assets/tiktok.jpg", "tiktok.jpg",
+        "assets/tiktok.jpeg", "tiktok.jpeg",
+        "assets/tiktok.webp", "tiktok.webp"
+    ])
+
+    youtube_icon_src = image_to_data_uri([
+        "assets/youtube.png", "youtube.png",
+        "assets/youtube.jpg", "youtube.jpg",
+        "assets/youtube.jpeg", "youtube.jpeg",
+        "assets/youtube.webp", "youtube.webp"
+    ])
+
+    zalo_icon_src = image_to_data_uri([
+        "assets/zalo.png", "zalo.png",
+        "assets/zalo.jpg", "zalo.jpg",
+        "assets/zalo.jpeg", "zalo.jpeg",
+        "assets/zalo.webp", "zalo.webp"
+    ])
+
+    facebook_icon_html = f'<img class="social-icon" src="{facebook_icon_src}" alt="Facebook">' if facebook_icon_src else "f"
+    tiktok_icon_html = f'<img class="social-icon" src="{tiktok_icon_src}" alt="TikTok">' if tiktok_icon_src else "♪"
+    youtube_icon_html = f'<img class="social-icon" src="{youtube_icon_src}" alt="YouTube">' if youtube_icon_src else "▶"
+    zalo_icon_html = f'<img class="social-icon" src="{zalo_icon_src}" alt="Zalo">' if zalo_icon_src else "z"
+
+    facebook_link = "https://www.facebook.com/share/1CubUJMiYU/"
+    tiktok_link = "https://www.tiktok.com/@minhkhoadayyy?is_from_webapp=1&sender_device=pc"
+    youtube_link = "http://www.youtube.com/@MINHKHOALT"
+    zalo_link = "https://zalo.me/0346538917"
+
+    facebook_href = escape(facebook_link, quote=True)
+    tiktok_href = escape(tiktok_link, quote=True)
+    youtube_href = escape(youtube_link, quote=True)
+    zalo_href = escape(zalo_link, quote=True)
+
+    vitri_icon_html = f'<img class="info-icon" src="{vitri_icon_src}" alt="Vị trí">' if vitri_icon_src else "📍"
+    email_icon_html = f'<img class="info-icon" src="{email_icon_src}" alt="Email">' if email_icon_src else "✉️"
+    dienthoai_icon_html = f'<img class="info-icon" src="{dienthoai_icon_src}" alt="Điện thoại">' if dienthoai_icon_src else "📞"
+
+    project_title = "LAO CAI HERITAGE AI"
+    project_subtitle = (
+        "Là sản phẩm số giúp giới thiệu điểm đến, lịch trình và giá trị văn hóa "
+        "Lào Cai bằng giao diện trực quan kết hợp AI."
+    )
+
+    contact_address = "Khánh Yên, Lào Cai, Việt Nam"
+    contact_email = "khoagaming999@gmail.com"
+    contact_phone = "0346 538 917"
+
+    components.html(f"""
+    <style>
+    * {{
+        box-sizing: border-box;
+    }}
+
+    html, body {{
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        font-family: Inter, Arial, sans-serif;
+    }}
+
+    .about-contact-wrap {{
+        max-width: 1320px;
+        margin: 56px auto 28px auto;
+        padding: 0 16px;
+    }}
+
+    .about-contact {{
+        position: relative;
+        overflow: hidden;
+        border-radius: 34px;
+        padding: 34px;
+        background:
+            radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 28%),
+            linear-gradient(135deg, #6f829e 0%, #8799b3 35%, #b9c6d6 100%);
+        box-shadow: 0 20px 52px rgba(15,23,42,0.16);
+    }}
+
+    .about-contact::before {{
+        content: "";
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        top: -140px;
+        right: -80px;
+    }}
+
+    .about-contact::after {{
+        content: "";
+        position: absolute;
+        width: 240px;
+        height: 240px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+        bottom: -110px;
+        left: -70px;
+    }}
+
+    .about-contact-grid {{
+        position: relative;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: 1.08fr 0.92fr;
+        gap: 34px;
+        align-items: stretch;
+    }}
+
+    .about-left {{
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }}
+
+    .brand-row {{
+        display: flex;
+        gap: 22px;
+        align-items: center;
+        margin-bottom: 22px;
+    }}
+
+    .brand-logo {{
+        width: 176px;
+        height: 176px;
+        min-width: 176px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 5px solid rgba(255,255,255,0.68);
+        box-shadow: 0 12px 28px rgba(0,0,0,0.16);
+        background: rgba(255,255,255,0.16);
+    }}
+
+    .brand-logo img {{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }}
+
+    .brand-title {{
+        font-size: 54px;
+        line-height: 1.02;
+        font-weight: 900;
+        margin: 0 0 12px 0;
+        letter-spacing: 0.01em;
+        color: #ffffff;
+    }}
+
+    .brand-subtitle {{
+        font-size: 18px;
+        line-height: 1.82;
+        color: rgba(255,255,255,0.94);
+        max-width: 540px;
+    }}
+
+    .brand-line {{
+        width: 190px;
+        height: 4px;
+        margin: 18px 0 0 0;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(255,255,255,0.92), rgba(255,255,255,0.18));
+    }}
+
+    .about-bottom {{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 12px;
+    }}
+
+    .info-box {{
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 24px;
+        padding: 20px 22px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }}
+
+    .info-title {{
+        font-size: 22px;
+        font-weight: 900;
+        margin-bottom: 14px;
+        color: #ffffff;
+    }}
+
+    .info-item{{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        font-size:15px;
+        line-height:1.9;
+        color:rgba(255,255,255,0.93);
+    }}
+
+    .info-icon{{
+        width:18px;
+        height:18px;
+        object-fit:contain;
+        display:block;
+        flex-shrink:0;
+    }}
+
+    .social-row {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 8px;
+    }}
+
+    .social-btn{{
+        width:54px;
+        height:54px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#ffffff;
+        color:#253247;
+        font-size:16px;
+        font-weight:900;
+        box-shadow:0 8px 18px rgba(0,0,0,0.12);
+        overflow:hidden;
+        flex-shrink:0;
+        text-decoration:none;
+        cursor:pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }}
+
+    .social-btn:hover{{
+        transform: translateY(-2px);
+        box-shadow:0 12px 24px rgba(0,0,0,0.16);
+    }}
+
+    .social-icon{{
+        width:24px;
+        height:24px;
+        object-fit:contain;
+        display:block;
+    }}
+
+    .about-right {{
+        display: flex;
+        align-items: center;
+    }}
+
+    .form-card {{
+        width: 100%;
+        background: rgba(255,255,255,0.28);
+        border: 1px solid rgba(255,255,255,0.28);
+        border-radius: 30px;
+        padding: 16px;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.34);
+    }}
+
+    .form-inner {{
+        background: rgba(255,255,255,0.76);
+        border-radius: 24px;
+        padding: 18px;
+    }}
+
+    .form-row {{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 14px;
+    }}
+
+    .input,
+    .textarea {{
+        width: 100%;
+        border: 1px solid rgba(148,163,184,0.28);
+        background: rgba(255,255,255,0.94);
+        border-radius: 16px;
+        padding: 14px 16px;
+        font-size: 15px;
+        color: #0f172a;
+        outline: none;
+    }}
+
+    .input::placeholder,
+    .textarea::placeholder {{
+        color: #94a3b8;
+    }}
+
+    .input:focus,
+    .textarea:focus {{
+        border-color: #8ca8c7;
+        box-shadow: 0 0 0 3px rgba(140,168,199,0.14);
+    }}
+
+    .textarea {{
+        min-height: 210px;
+        resize: none;
+        margin-bottom: 16px;
+    }}
+
+    .submit-wrap {{
+        display: flex;
+        justify-content: center;
+    }}
+
+    .submit-btn {{
+        border: none;
+        min-width: 180px;
+        height: 50px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #d8dde6 0%, #bcc6d4 100%);
+        color: #3f4b5d;
+        font-size: 22px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 10px 22px rgba(15,23,42,0.10);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }}
+
+    .submit-btn:hover {{
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px rgba(15,23,42,0.14);
+    }}
+
+    @media (max-width: 1100px) {{
+        .about-contact-grid {{
+            grid-template-columns: 1fr;
+        }}
+
+        .brand-title {{
+            font-size: 42px;
+        }}
+    }}
+
+    @media (max-width: 720px) {{
+        .about-contact {{
+            padding: 22px 18px;
+            border-radius: 26px;
+        }}
+
+        .brand-row {{
+            flex-direction: column;
+            align-items: flex-start;
+        }}
+
+        .brand-logo {{
+            width: 142px;
+            height: 142px;
+            min-width: 142px;
+        }}
+
+        .brand-title {{
+            font-size: 34px;
+        }}
+
+        .about-bottom,
+        .form-row {{
+            grid-template-columns: 1fr;
+        }}
+
+        .textarea {{
+            min-height: 180px;
+        }}
+    }}
+    </style>
+
+    <div class="about-contact-wrap">
+        <div class="about-contact">
+            <div class="about-contact-grid">
+
+                <div class="about-left">
+                    <div class="brand-row">
+                        <div class="brand-logo">
+                            <img src="{home_logo_src}" alt="Lao Cai Heritage AI">
+                        </div>
+
+                        <div>
+                            <h2 class="brand-title">{escape(project_title)}</h2>
+                            <div class="brand-subtitle">{escape(project_subtitle)}</div>
+                            <div class="brand-line"></div>
+                        </div>
+                    </div>
+
+                    <div class="about-bottom">
+                        <div class="info-box">
+                            <div class="info-title">Liên hệ</div>
+                            <div class="info-item">{vitri_icon_html} Khánh Yên, Lào Cai, Việt Nam</div>
+                            <div class="info-item">{email_icon_html} khoagaming999@gmail.com</div>
+                            <div class="info-item">{dienthoai_icon_html} 0346 538 917</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-title">Mạng xã hội</div>
+                            <div class="social-row">
+                                <a class="social-btn" href="{facebook_href}" target="_blank" rel="noopener noreferrer">{facebook_icon_html}</a>
+                                <a class="social-btn" href="{tiktok_href}" target="_blank" rel="noopener noreferrer">{tiktok_icon_html}</a>
+                                <a class="social-btn" href="{youtube_href}" target="_blank" rel="noopener noreferrer">{youtube_icon_html}</a>
+                                <a class="social-btn" href="{zalo_href}" target="_blank" rel="noopener noreferrer">{zalo_icon_html}</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="about-right">
+                    <div class="form-card">
+                        <div class="form-inner">
+                            <div class="form-row">
+                                <input class="input" type="text" placeholder="Họ tên">
+                                <input class="input" type="email" placeholder="Gmail.com">
+                            </div>
+
+                            <textarea class="textarea" placeholder="Nội dung..."></textarea>
+
+                            <div class="submit-wrap">
+                                <button class="submit-btn">Gửi</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </div>
-
-    <div style="line-height:1.8;font-size:16px;color:#1f2937;">
-    Thôn...., xã Khánh Yên,<br>
-    tỉnh Lào Cai, Việt Nam
-    </div>
-
-    <div style="margin-top:12px;font-size:16px;color:#1f2937;">
-    khoagaming999@gmail.com
-    </div>
-
-    <div style="margin-top:18px;font-size:22px;">
-    📷 📘 💬 🎵 💬
-    </div>
-
-    <div style="
-    margin-top:18px;
-    background:#e41e10;
-    color:white;
-    padding:12px 18px;
-    border-radius:10px;
-    display:inline-block;
-    font-weight:700;
-    font-size:16px;
-    ">
-    📞 0346 538 197
-    </div>
-
-    <div style="margin-top:10px;font-size:15px;color:#1f2937;">
-    Tổng đài miễn phí 24/7
-    </div>
-    </div>
-
-    <div>
-    <div style="font-size:22px;font-weight:700;margin-bottom:14px;color:#111827;">
-    Thông tin
-    </div>
-    <div style="line-height:2;color:#1f2937;">
-    <div>Khảo sát visa</div>
-    <div>Tin tức</div>
-    <div>Sitemap</div>
-    <div>Trợ giúp</div>
-    </div>
-    </div>
-
-    <div>
-    <div style="font-size:22px;font-weight:700;margin-bottom:14px;color:#111827;">
-    Dịch vụ
-    </div>
-    <div style="line-height:2;color:#1f2937;">
-    <div>Tour</div>
-    <div>Khách sạn</div>
-    <div>Vé máy bay</div>
-    <div>Combo du lịch</div>
-    </div>
-    </div>
-
-    <div>
-    <div style="font-size:22px;font-weight:700;margin-bottom:14px;color:#111827;">
-    Chấp nhận thanh toán
-    </div>
-
-    <div style="
-    display:flex;
-    flex-wrap:wrap;
-    gap:12px;
-    font-size:18px;
-    font-weight:700;
-    color:#334155;
-    ">
-    <div style="background:white;padding:10px 14px;border-radius:10px;">VISA</div>
-    <div style="background:white;padding:10px 14px;border-radius:10px;">Mastercard</div>
-    <div style="background:white;padding:10px 14px;border-radius:10px;">VNPAY</div>
-    <div style="background:white;padding:10px 14px;border-radius:10px;">JCB</div>
-    <div style="background:white;padding:10px 14px;border-radius:10px;">ShopeePay</div>
-    <div style="background:white;padding:10px 14px;border-radius:10px;">MSB</div>
-    <div style="background:white;padding:10px 14px;border-radius:10px;">123Pay</div>
-    <div style="background:white;padding:10px 14px;border-radius:10px;">MoMo</div>
-    </div>
-    </div>
-
-    </div>
-    </div>
-    """), unsafe_allow_html=True)
-
-elif page == "ai":
-    import os
-    from openai import OpenAI
-    import streamlit as st
-
-    api_key = os.getenv("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", "").strip()
-
-    st.title("🤖 Trợ lý AI du lịch Lào Cai")
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    prompt = st.chat_input("Hỏi về du lịch Lào Cai...")
-
-    if prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
-
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        with st.chat_message("assistant"):
-            if not api_key:
-                reply = "Bạn chưa cấu hình OPENAI_API_KEY."
-                st.error(reply)
-            else:
-                try:
-                    client = OpenAI(api_key=api_key)
-
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": (
-                                    "Bạn là trợ lý du lịch của LAO CAI HERITAGE AI. "
-                                    "Trả lời tự nhiên, ngắn gọn, dễ hiểu, ưu tiên nội dung về Lào Cai. "
-                                    "Nếu không chắc thì nói rõ chưa có dữ liệu."
-                                ),
-                            }
-                        ] + st.session_state.messages
-                    )
-
-                    reply = response.choices[0].message.content or "Mình chưa có câu trả lời phù hợp."
-
-                    st.markdown(reply)
-
-                except Exception as e:
-                    error_text = str(e)
-
-                    if "insufficient_quota" in error_text:
-                        reply = (
-                            "Tài khoản API của bạn đang hết quota hoặc chưa có credits/billing. "
-                            "Bạn cần vào OpenAI Platform để thêm billing rồi thử lại."
-                        )
-                    else:
-                        reply = f"Lỗi khi gọi AI: {error_text}"
-
-                    st.error(reply)
-
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+    """, height=610, scrolling=False)
 
 elif page == "lichtrinh":
     import json
@@ -3862,7 +4583,7 @@ elif page == "diemden":
 
         cards_html += "</div>"
         rows = result_count if result_count else 1
-        cards_height = max(360, rows * 375)
+        cards_height = max(3000, result_count * 435)
     else:
         cards_html += """
         <div class="dd-empty">
@@ -4209,7 +4930,7 @@ elif page == "diemden_detail":
         for i in range(6)
     )
 
-    page_height = 5850 + max(0, len(full_desc_raw) // 500) * 220
+    page_height = 7200 + max(0, len(full_desc_raw) // 600) * 240
 
     html_template = Template("""
     <style>
@@ -5416,3 +6137,1394 @@ elif page == "diemden_detail":
     )
 
     components.html(html_output, height=page_height, scrolling=False)
+
+elif page == "chatbot":
+    import base64
+    from html import escape
+    import streamlit.components.v1 as components
+
+    def _image_to_data_uri(candidates):
+        mime_map = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".webp": "image/webp"
+        }
+
+        for path in candidates:
+            if path and os.path.exists(path):
+                ext = os.path.splitext(path)[1].lower()
+                mime = mime_map.get(ext, "image/png")
+                try:
+                    with open(path, "rb") as f:
+                        encoded = base64.b64encode(f.read()).decode("utf-8")
+                    return f"data:{mime};base64,{encoded}"
+                except Exception:
+                    pass
+        return ""
+
+    logo_src = _image_to_data_uri([
+        "assets/anime_teamlogo.png",
+        "anime_teamlogo.png"
+    ])
+
+    default_bot_message = (
+        "Xin chào! Mình là trợ lý AI của Lao Cai Heritage AI. "
+        "Bạn có thể hỏi về điểm đến, lịch trình, mùa đẹp hoặc chi phí tham khảo."
+    )
+
+    if "gemini_messages" not in st.session_state:
+        st.session_state.gemini_messages = [
+            {
+                "role": "assistant",
+                "content": default_bot_message
+            }
+        ]
+
+    def send_chat_message(user_text: str):
+        clean_user_text = str(user_text or "").strip()
+        if not clean_user_text:
+            return
+
+        st.session_state.gemini_messages.append({
+            "role": "user",
+            "content": clean_user_text
+        })
+
+        answer = ask_gemini(
+            user_message=clean_user_text,
+            payload=CHATBOT_PAYLOAD,
+            current_page=page,
+            messages=st.session_state.gemini_messages[:-1]
+        )
+
+        st.session_state.gemini_messages.append({
+            "role": "assistant",
+            "content": answer
+        })
+
+    suggestion_questions = [
+        "Sa Pa có gì đẹp?",
+        "Mùa nào đi Fansipan đẹp?",
+        "Gợi ý lịch trình đi Bắc Hà",
+        "Chi phí đi Sa Pa 2 ngày",
+        "Đền Bảo Hà có gì nổi bật?",
+        "Thời tiết Lào Cai hôm nay"
+    ]
+
+    st.markdown("""
+    <style>
+    /* khung ngoài chatbot */
+    .chatbot-page-title{
+        max-width: 1420px;
+        margin: 16px auto 8px auto;
+        padding: 0 14px;
+        box-sizing: border-box;
+    }
+
+    /* 2 khối chính */
+    div[data-testid="stVerticalBlockBorderWrapper"]{
+        border: 2px solid #bfeeee !important;
+        border-radius: 28px !important;
+        background: #ffffff !important;
+        box-shadow: 0 14px 28px rgba(15,23,42,0.05) !important;
+        padding: 14px 16px 16px 16px !important;
+        min-height: 760px !important;
+    }
+
+    .chat-divider{
+        width: 2px;
+        height: 760px;
+        margin: 0 auto;
+        border-radius: 999px;
+        background: linear-gradient(
+            to bottom,
+            rgba(143,231,231,0.00) 0%,
+            rgba(143,231,231,0.35) 12%,
+            rgba(143,231,231,0.50) 50%,
+            rgba(143,231,231,0.35) 88%,
+            rgba(143,231,231,0.00) 100%
+        );
+        filter: blur(0.6px);
+        opacity: 0.65;
+        box-shadow: 0 0 10px rgba(143,231,231,0.18);
+    }
+
+    .chat-left-logo-wrap{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 290px;
+        margin-bottom: 18px;
+    }
+
+    .chat-left-logo{
+        width: 100%;
+        max-width: 310px;
+        object-fit: contain;
+        display: block;
+        filter: drop-shadow(0 10px 18px rgba(15,23,42,0.10));
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            rgba(0,0,0,1) 0%,
+            rgba(0,0,0,1) 72%,
+            rgba(0,0,0,0.88) 82%,
+            rgba(0,0,0,0.55) 90%,
+            rgba(0,0,0,0.18) 96%,
+            rgba(0,0,0,0) 100%
+        );
+        mask-image: linear-gradient(
+            to bottom,
+            rgba(0,0,0,1) 0%,
+            rgba(0,0,0,1) 72%,
+            rgba(0,0,0,0.88) 82%,
+            rgba(0,0,0,0.55) 90%,
+            rgba(0,0,0,0.18) 96%,
+            rgba(0,0,0,0) 100%
+        );
+    }
+
+    .chat-left-title{
+        text-align: center;
+        font-size: 16px;
+        font-weight: 800;
+        color: #334155;
+        margin: 2px 0 16px 0;
+        line-height: 1.6;
+    }
+
+    .chat-right-head{
+        padding: 2px 6px 8px 6px;
+        margin-bottom: 6px;
+    }
+
+    .chat-right-title{
+        font-size: 34px;
+        font-weight: 900;
+        color: #111827;
+        line-height: 1.1;
+        margin-bottom: 6px;
+    }
+
+    .chat-right-subtitle{
+        font-size: 15px;
+        line-height: 1.8;
+        color: #64748b;
+    }
+
+    .chat-bottom-note{
+        margin-top: 8px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #64748b;
+        padding-left: 4px;
+    }
+
+    /* nút gợi ý bên trái */
+        div[data-testid="stButton"] > button{
+        width: 100%;
+        min-height: 35px !important;
+        border-radius: 16px !important;
+        border: 1.5px solid #bfeeee !important;
+        background: #ffffff !important;
+        color: #4b6472 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 0 14px !important;
+        box-shadow: none !important;
+        margin-bottom: 0px !important;
+    }
+
+    div[data-testid="stButton"] > button:hover{
+        background: #f7ffff !important;
+        border-color: #7ee4e4 !important;
+        color: #334155 !important;
+    }
+
+    /* ô nhập */
+    div[data-testid="stTextInput"] input{
+        min-height: 36px !important;
+        border-radius: 999px !important;
+        border: 2px solid #111827 !important;
+        background: #ffffff !important;
+        color: #111827 !important;
+        font-size: 17px !important;
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+        box-shadow: none !important;
+    }
+
+    div[data-testid="stTextInput"] input::placeholder{
+        color: #94a3b8 !important;
+    }
+
+    @media (max-width: 992px){
+        div[data-testid="stVerticalBlockBorderWrapper"]{
+            min-height: auto !important;
+        }
+
+        .chat-divider{
+            display: none;
+        }
+
+        .chat-right-title{
+            font-size: 28px;
+        }
+                
+    .chat-input-wrap{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 14px;
+    margin-bottom: 6px;
+}
+
+    .chat-input-wrap > div{
+        width: 92%;
+        max-width: 760px;
+    }
+
+    .chat-input-wrap div[data-testid="stForm"]{
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .chat-input-wrap div[data-testid="stTextInput"]{
+        margin-bottom: 0 !important;
+    }
+
+    .chat-input-wrap{
+        width: 100%;
+        margin-top: 14px;
+    }
+
+    .chat-input-wrap div[data-testid="stForm"]{
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .chat-input-wrap div[data-testid="stForm"] > div{
+        width: 100%;
+    }
+
+    .chat-input-wrap div[data-testid="stHorizontalBlock"]{
+        gap: 0 !important;
+        align-items: center !important;
+    }
+
+    .chat-input-wrap div[data-testid="stTextInput"]{
+        margin-bottom: 0 !important;
+    }
+
+    .chat-input-wrap div[data-testid="stTextInput"] > div{
+        position: relative !important;
+    }
+
+    .chat-input-wrap div[data-testid="stTextInput"] input{
+        height: 68px !important;
+        min-height: 68px !important;
+        border-radius: 999px !important;
+        border: 1.8px solid #b9d9ff !important;
+        background: #f3f6fb !important;
+        color: #111827 !important;
+        font-size: 18px !important;
+        padding-left: 34px !important;
+        padding-right: 88px !important;
+        box-shadow: none !important;
+    }
+
+    .chat-input-wrap div[data-testid="stTextInput"] input::placeholder{
+        color: #7b8ba1 !important;
+    }
+
+    .chat-input-wrap div[data-testid="stFormSubmitButton"]{
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin-left: -64px !important;
+        z-index: 5 !important;
+        width: 56px !important;
+        min-width: 56px !important;
+    }
+
+    .chat-input-wrap div[data-testid="stFormSubmitButton"] button{
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        border-radius: 50% !important;
+        border: none !important;
+        background: linear-gradient(180deg, #58b8ff 0%, #339af0 100%) !important;
+        color: white !important;
+        font-size: 20px !important;
+        font-weight: 900 !important;
+        padding: 0 !important;
+        box-shadow: 0 6px 14px rgba(51,154,240,0.28) !important;
+    }
+
+    .chat-input-wrap div[data-testid="stFormSubmitButton"] button:hover{
+        background: linear-gradient(180deg, #4aaeff 0%, #228be6 100%) !important;
+    }
+
+    .chat-input-wrap div[data-testid="stForm"] [data-testid="stCaptionContainer"],
+    .chat-input-wrap div[data-testid="stForm"] p{
+        display: none !important;
+    }
+
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    outer_left, outer_mid, outer_right = st.columns([0.02, 0.96, 0.02])
+
+    with outer_mid:
+        left_col, divider_col, right_col = st.columns([0.35, 0.02, 0.63], gap="small")
+
+        with left_col:
+            with st.container(border=False):
+                if logo_src:
+                    st.markdown(f"""
+                    <div class="chat-left-logo-wrap">
+                        <img class="chat-left-logo" src="{logo_src}" alt="anime_teamlogo">
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown("""
+                    <div class="chat-left-logo-wrap">
+                        <div class="chat-left-title">Chưa tìm thấy ảnh anime_teamlogo.png</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                for idx, question in enumerate(suggestion_questions):
+                    if st.button(question, key=f"chat_suggest_{idx}", use_container_width=True):
+                        send_chat_message(question)
+                        st.rerun()
+
+        with divider_col:
+            st.markdown('<div class="chat-divider"></div>', unsafe_allow_html=True)
+
+        with right_col:
+            with st.container(border=False):
+                st.markdown("""
+                <div class="chat-right-head">
+                    <div class="chat-right-title">Xin chào</div>
+                    <div class="chat-right-subtitle">
+                        Hỏi bất kì điều gì về điểm đến, lịch trình và trải nghiệm du lịch tại Lào Cai.
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                message_blocks = []
+                for msg in st.session_state.gemini_messages[-40:]:
+                    role = "user" if msg.get("role") == "user" else "assistant"
+                    content = escape(str(msg.get("content", ""))).replace("\n", "<br>")
+                    message_blocks.append(
+                        f'<div class="msg-row {role}"><div class="msg-bubble {role}">{content}</div></div>'
+                    )
+
+                messages_html = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        html, body {{
+                            margin: 0;
+                            padding: 0;
+                            background: transparent;
+                            font-family: "Segoe UI", Arial, sans-serif;
+                        }}
+
+                        .msg-wrap {{
+                            height: 560px;
+                            overflow-y: auto;
+                            padding: 8px 4px 10px 4px;
+                            box-sizing: border-box;
+                            background: #f7f7f7;
+                            border-radius: 22px;
+                        }}
+
+                        .msg-row {{
+                            display: flex;
+                            margin-bottom: 16px;
+                        }}
+
+                        .msg-row.user {{
+                            justify-content: flex-end;
+                        }}
+
+                        .msg-row.assistant {{
+                            justify-content: flex-start;
+                        }}
+
+                        .msg-bubble {{
+                            max-width: 76%;
+                            padding: 14px 18px;
+                            font-size: 16px;
+                            line-height: 1.75;
+                            color: #111827;
+                            word-break: break-word;
+                            box-sizing: border-box;
+                            box-shadow: 0 6px 14px rgba(15,23,42,0.04);
+                        }}
+
+                        .msg-bubble.user {{
+                            background: #dddddd;
+                            border-radius: 18px 18px 8px 18px;
+                        }}
+
+                        .msg-bubble.assistant {{
+                            background: #e9e9e9;
+                            border-radius: 18px 18px 18px 8px;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="msg-wrap" id="msgWrap">
+                        {''.join(message_blocks)}
+                    </div>
+
+                    <script>
+                        const box = document.getElementById("msgWrap");
+                        if (box) {{
+                            box.scrollTop = box.scrollHeight;
+                        }}
+                    </script>
+                </body>
+                </html>
+                """
+
+                components.html(messages_html, height=575, scrolling=False)
+
+                st.markdown('<div class="chat-input-wrap">', unsafe_allow_html=True)
+
+                with st.form("gemini_chat_main_form", clear_on_submit=True, border=False):
+                    input_col, send_col = st.columns([0.94, 0.06], gap="small")
+
+                    with input_col:
+                        user_text = st.text_input(
+                            "Nhập câu hỏi",
+                            placeholder="Hỏi bất cứ điều gì...",
+                            label_visibility="collapsed"
+                        )
+
+                    with send_col:
+                        submitted = st.form_submit_button("↑", use_container_width=True)
+
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                if submitted and user_text.strip():
+                    send_chat_message(user_text.strip())
+                    st.rerun()
+
+elif page == "gioithieu":
+    import json
+    from html import escape
+    import streamlit.components.v1 as components
+
+    def load_json_list(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data if isinstance(data, list) else []
+        except Exception:
+            return []
+
+    DEFAULT_IMG = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
+
+    def safe_url(value, fallback=DEFAULT_IMG):
+        text = str(value).strip() if value is not None else ""
+        return escape(text if text else fallback, quote=True)
+
+    def get_image(data, idx, fallback=DEFAULT_IMG):
+        try:
+            value = str(data[idx].get("image", "")).strip()
+            return safe_url(value if value else fallback)
+        except Exception:
+            return safe_url(fallback)
+
+    diemden_data = load_json_list("diemden.json")
+    lichtrinh_data = load_json_list("lichtrinh.json")
+
+    hero_image = get_image(diemden_data, 0)
+    overview_image = get_image(diemden_data, 1)
+    collage_img_1 = get_image(diemden_data, 2)
+    collage_img_2 = get_image(diemden_data, 3)
+    service_img_1 = get_image(diemden_data, 4)
+    service_img_2 = get_image(diemden_data, 5)
+    service_img_3 = get_image(diemden_data, 6)
+    service_img_4 = get_image(diemden_data, 7)
+
+    total_places = len(diemden_data)
+    total_routes = len(lichtrinh_data)
+    total_areas = len({str(item.get("area", "")).strip() for item in diemden_data if str(item.get("area", "")).strip()})
+    total_categories = len({str(item.get("category", "")).strip() for item in diemden_data if str(item.get("category", "")).strip()})
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            * {{
+                box-sizing: border-box;
+            }}
+
+            html, body {{
+                margin: 0;
+                padding: 0;
+                font-family: Inter, Arial, sans-serif;
+                background: #f4f1ec;
+                color: #243127;
+            }}
+
+            .gt-page {{
+                width: 100%;
+                padding: 28px 18px 52px 18px;
+                background: linear-gradient(180deg, #f4f1ec 0%, #f7f4ef 100%);
+            }}
+
+            .gt-wrap {{
+                max-width: 1360px;
+                margin: 0 auto;
+            }}
+
+            /* ===== PHẦN 1 ===== */
+            .gt-hero {{
+                display: grid;
+                grid-template-columns: 1.02fr 1.18fr;
+                gap: 24px;
+                align-items: center;
+                margin-bottom: 22px;
+            }}
+
+            .gt-left {{
+                padding: 18px 8px 18px 6px;
+            }}
+
+            .gt-kicker {{
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 13px;
+                font-weight: 700;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: #8c7b66;
+                margin-bottom: 18px;
+            }}
+
+            .gt-kicker::before {{
+                content: "";
+                width: 26px;
+                height: 2px;
+                background: #b59e82;
+                border-radius: 999px;
+            }}
+
+            .gt-title {{
+                font-size: 62px;
+                line-height: 1.03;
+                font-weight: 500;
+                color: #4a5a4a;
+                margin: 0 0 18px 0;
+                font-family: Georgia, "Times New Roman", serif;
+            }}
+
+            .gt-sub {{
+                font-size: 18px;
+                line-height: 1.8;
+                color: #68756a;
+                margin-bottom: 22px;
+                max-width: 560px;
+            }}
+
+            .gt-actions {{
+                display: flex;
+                gap: 14px;
+                flex-wrap: wrap;
+            }}
+
+            .gt-btn {{
+                min-width: 178px;
+                height: 48px;
+                border-radius: 12px;
+                border: 1.5px solid #50624f;
+                background: transparent;
+                color: #50624f;
+                font-size: 15px;
+                font-weight: 700;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                transition: 0.2s ease;
+            }}
+
+            .gt-btn.primary {{
+                background: #50624f;
+                color: #ffffff;
+                box-shadow: 0 10px 22px rgba(80, 98, 79, 0.18);
+            }}
+
+            .gt-btn:hover {{
+                transform: translateY(-1px);
+            }}
+
+            .gt-image {{
+                position: relative;
+                min-height: 440px;
+                border-radius: 0 0 0 120px;
+                overflow: hidden;
+                background-image: url('{hero_image}');
+                background-size: cover;
+                background-position: center;
+                box-shadow: 0 18px 38px rgba(0,0,0,0.08);
+            }}
+
+            .gt-image::before {{
+                content: "";
+                position: absolute;
+                inset: 0;
+                background:
+                    linear-gradient(to right, rgba(244,241,236,0.92) 0%, rgba(244,241,236,0.60) 18%, rgba(244,241,236,0.10) 38%, rgba(0,0,0,0.08) 100%);
+            }}
+
+            .gt-image::after {{
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.14) 100%);
+            }}
+
+            .gt-feature-bar {{
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+                background: #f2efea;
+                border: 1px solid #e7e0d6;
+                border-radius: 18px;
+                padding: 14px;
+                margin-bottom: 34px;
+                box-shadow: 0 10px 24px rgba(35, 49, 39, 0.04);
+            }}
+
+            .gt-feature {{
+                display: flex;
+                gap: 14px;
+                align-items: flex-start;
+                padding: 10px 10px;
+            }}
+
+            .gt-feature-icon {{
+                width: 42px;
+                height: 42px;
+                border-radius: 12px;
+                background: #f8f5ef;
+                border: 1px solid #e3dacd;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                flex-shrink: 0;
+                color: #8a765f;
+            }}
+
+            .gt-feature-title {{
+                font-size: 16px;
+                font-weight: 800;
+                color: #4b5a4b;
+                margin-bottom: 6px;
+            }}
+
+            .gt-feature-text {{
+                font-size: 13px;
+                line-height: 1.65;
+                color: #7a8478;
+            }}
+
+            .gt-bottom {{
+                display: grid;
+                grid-template-columns: 0.82fr 1.18fr;
+                gap: 26px;
+                align-items: center;
+                margin-bottom: 54px;
+            }}
+
+            .gt-bottom-left {{
+                padding: 12px 4px;
+            }}
+
+            .gt-bottom-title {{
+                font-size: 54px;
+                line-height: 1.08;
+                font-weight: 500;
+                color: #4a5a4a;
+                margin: 0 0 16px 0;
+                font-family: Georgia, "Times New Roman", serif;
+            }}
+
+            .gt-bottom-text {{
+                font-size: 16px;
+                line-height: 1.9;
+                color: #6f7a6e;
+                max-width: 500px;
+                margin-bottom: 24px;
+            }}
+
+            .gt-small-btn {{
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 140px;
+                height: 46px;
+                border-radius: 12px;
+                background: #50624f;
+                color: white;
+                font-size: 14px;
+                font-weight: 800;
+                border: none;
+                cursor: pointer;
+                box-shadow: 0 10px 22px rgba(80, 98, 79, 0.16);
+            }}
+
+            .gt-bottom-right {{
+                position: relative;
+                min-height: 390px;
+                border-radius: 18px;
+                overflow: hidden;
+                background-image: url('{overview_image}');
+                background-size: cover;
+                background-position: center;
+                box-shadow: 0 18px 38px rgba(0,0,0,0.08);
+            }}
+
+            .gt-bottom-right::before {{
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.18) 100%);
+            }}
+
+            .gt-stats {{
+                position: absolute;
+                left: 24px;
+                right: 24px;
+                bottom: 16px;
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+                background: rgba(247, 244, 238, 0.97);
+                border: 1px solid rgba(227, 218, 205, 0.95);
+                border-radius: 18px;
+                padding: 18px 12px;
+                box-shadow: 0 14px 26px rgba(0,0,0,0.08);
+            }}
+
+            .gt-stat {{
+                text-align: center;
+                padding: 6px 4px;
+            }}
+
+            .gt-stat-value {{
+                font-size: 34px;
+                line-height: 1.1;
+                font-weight: 700;
+                color: #4d5c4d;
+                font-family: Georgia, "Times New Roman", serif;
+                margin-bottom: 6px;
+            }}
+
+            .gt-stat-label {{
+                font-size: 14px;
+                font-weight: 700;
+                color: #5c675b;
+                margin-bottom: 3px;
+            }}
+
+            .gt-stat-sub {{
+                font-size: 12px;
+                line-height: 1.5;
+                color: #7b847a;
+            }}
+
+            /* ===== PHẦN 2 - GIAO DIỆN BẠN VỪA GỬI ===== */
+            .gt-story-section {{
+                background: #faf8f4;
+                border-radius: 22px;
+                padding: 42px 34px 40px 34px;
+                margin-bottom: 0;
+            }}
+
+            .gt-story-grid {{
+                display: grid;
+                grid-template-columns: 0.88fr 1.12fr;
+                gap: 34px;
+                align-items: center;
+            }}
+
+            .gt-collage-wrap {{
+                position: relative;
+                min-height: 320px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }}
+
+            .gt-collage-circle {{
+                position: absolute;
+                width: 240px;
+                height: 240px;
+                border-radius: 50%;
+                background: #ece6dd;
+                left: 0;
+                top: 34px;
+            }}
+
+            .gt-collage-card-1 {{
+                position: relative;
+                width: 250px;
+                height: 160px;
+                background-image: url('{collage_img_1}');
+                background-size: cover;
+                background-position: center;
+                box-shadow: 0 18px 34px rgba(0,0,0,0.14);
+                z-index: 2;
+                margin-left: 34px;
+            }}
+
+            .gt-collage-card-2 {{
+                position: absolute;
+                width: 170px;
+                height: 115px;
+                background-image: url('{collage_img_2}');
+                background-size: cover;
+                background-position: center;
+                left: 78px;
+                bottom: 36px;
+                box-shadow: 0 16px 30px rgba(0,0,0,0.14);
+                z-index: 3;
+            }}
+
+            .gt-badge-float {{
+                position: absolute;
+                left: 18px;
+                top: 124px;
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                background: #d8c84b;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #ffffff;
+                font-size: 22px;
+                font-weight: 900;
+                z-index: 4;
+                box-shadow: 0 10px 22px rgba(216,200,75,0.30);
+            }}
+
+            .gt-story-kicker {{
+                font-size: 13px;
+                font-weight: 700;
+                letter-spacing: 0.16em;
+                text-transform: uppercase;
+                color: #9b8d7c;
+                margin-bottom: 14px;
+            }}
+
+            .gt-story-title {{
+                font-size: 42px;
+                line-height: 1.1;
+                font-weight: 500;
+                color: #4a5a4a;
+                margin: 0 0 16px 0;
+                font-family: Georgia, "Times New Roman", serif;
+                max-width: 520px;
+            }}
+
+            .gt-story-desc {{
+                font-size: 15px;
+                line-height: 1.9;
+                color: #748071;
+                max-width: 600px;
+                margin-bottom: 22px;
+            }}
+
+            .gt-mini-features {{
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px 18px;
+                margin-bottom: 22px;
+            }}
+
+            .gt-mini-item {{
+                display: flex;
+                gap: 12px;
+                align-items: flex-start;
+            }}
+
+            .gt-mini-icon {{
+                width: 34px;
+                height: 34px;
+                border-radius: 10px;
+                background: #f2eee8;
+                border: 1px solid #e6ddd1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 17px;
+                color: #7e8d6f;
+                flex-shrink: 0;
+            }}
+
+            .gt-mini-title {{
+                font-size: 14px;
+                font-weight: 800;
+                color: #4e5c4d;
+                margin-bottom: 4px;
+            }}
+
+            .gt-mini-text {{
+                font-size: 12px;
+                line-height: 1.65;
+                color: #7c857a;
+            }}
+
+            .gt-story-btn {{
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 138px;
+                height: 42px;
+                border-radius: 10px;
+                background: #d8c84b;
+                color: #2f382d;
+                font-size: 14px;
+                font-weight: 800;
+                border: none;
+                cursor: pointer;
+                box-shadow: 0 10px 22px rgba(216,200,75,0.22);
+            }}
+
+            /* ===== SERVICES ===== */
+            .gt-services {{
+                background: #ebe6de;
+                margin-top: 0;
+                padding: 52px 28px 40px 28px;
+                border-radius: 0 0 22px 22px;
+            }}
+
+            .gt-services-head {{
+                text-align: center;
+                margin-bottom: 30px;
+            }}
+
+            .gt-services-kicker {{
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.18em;
+                text-transform: uppercase;
+                color: #968775;
+                margin-bottom: 10px;
+            }}
+
+            .gt-services-title {{
+                font-size: 34px;
+                line-height: 1.15;
+                font-weight: 500;
+                color: #4c5b4c;
+                margin: 0;
+                font-family: Georgia, "Times New Roman", serif;
+            }}
+
+            .gt-service-grid {{
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 16px;
+            }}
+
+            .gt-service-card {{
+                background: #f7f4ee;
+                padding: 18px 14px 14px 14px;
+                min-height: 290px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                border: 1px solid #e3ddd4;
+                box-shadow: 0 8px 18px rgba(0,0,0,0.04);
+            }}
+
+            .gt-service-number {{
+                font-size: 12px;
+                font-weight: 800;
+                color: #b0a08f;
+                letter-spacing: 0.10em;
+                text-transform: uppercase;
+                margin-bottom: 14px;
+            }}
+
+            .gt-service-name {{
+                font-size: 18px;
+                line-height: 1.3;
+                font-weight: 800;
+                color: #4f5d4f;
+                margin-bottom: 10px;
+                text-transform: uppercase;
+            }}
+
+            .gt-service-text {{
+                font-size: 13px;
+                line-height: 1.75;
+                color: #7a8478;
+                margin-bottom: 14px;
+                min-height: 88px;
+            }}
+
+            .gt-service-image {{
+                width: 100%;
+                height: 95px;
+                background-size: cover;
+                background-position: center;
+                margin-top: auto;
+            }}
+
+            @media (max-width: 1100px) {{
+                .gt-hero,
+                .gt-bottom,
+                .gt-story-grid {{
+                    grid-template-columns: 1fr;
+                }}
+
+                .gt-title {{
+                    font-size: 48px;
+                }}
+
+                .gt-bottom-title {{
+                    font-size: 42px;
+                }}
+
+                .gt-feature-bar {{
+                    grid-template-columns: repeat(2, 1fr);
+                }}
+
+                .gt-service-grid {{
+                    grid-template-columns: repeat(2, 1fr);
+                }}
+            }}
+
+            @media (max-width: 720px) {{
+                .gt-page {{
+                    padding: 18px 10px 28px 10px;
+                }}
+
+                .gt-title {{
+                    font-size: 38px;
+                }}
+
+                .gt-bottom-title,
+                .gt-story-title {{
+                    font-size: 34px;
+                }}
+
+                .gt-sub,
+                .gt-bottom-text,
+                .gt-story-desc {{
+                    font-size: 15px;
+                }}
+
+                .gt-image {{
+                    min-height: 300px;
+                    border-radius: 0 0 0 60px;
+                }}
+
+                .gt-feature-bar,
+                .gt-stats,
+                .gt-mini-features,
+                .gt-service-grid {{
+                    grid-template-columns: 1fr;
+                }}
+
+                .gt-bottom-right {{
+                    min-height: 420px;
+                }}
+
+                .gt-story-section {{
+                    padding: 28px 16px 28px 16px;
+                }}
+
+                .gt-collage-wrap {{
+                    min-height: 270px;
+                }}
+
+                .gt-collage-circle {{
+                    width: 180px;
+                    height: 180px;
+                    left: 6px;
+                    top: 34px;
+                }}
+
+                .gt-collage-card-1 {{
+                    width: 210px;
+                    height: 135px;
+                    margin-left: 28px;
+                }}
+
+                .gt-collage-card-2 {{
+                    width: 138px;
+                    height: 92px;
+                    left: 76px;
+                    bottom: 42px;
+                }}
+
+                .gt-badge-float {{
+                    width: 44px;
+                    height: 44px;
+                    left: 10px;
+                    top: 112px;
+                    font-size: 18px;
+                }}
+
+                .gt-services {{
+                    padding: 34px 16px 24px 16px;
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="gt-page">
+            <div class="gt-wrap">
+
+                <section class="gt-hero">
+                    <div class="gt-left">
+                        <div class="gt-kicker">Dự án</div>
+                        <h1 class="gt-title">LAO CAI HERITAGE AI</h1>
+                        <div class="gt-sub">
+                            Nền tảng giới thiệu văn hóa, lịch sử và điểm đến Lào Cai theo hướng hiện đại, trực quan và ứng dụng AI.
+                            Dự án giúp người dùng tra cứu thông tin nhanh hơn, hiểu sâu hơn và có trải nghiệm khám phá thông minh hơn.
+                        </div>
+
+                        <div class="gt-actions">
+                            <button class="gt-btn primary" onclick="window.parent.location.href='?page=diemden'">Khám phá điểm đến</button>
+                            <button class="gt-btn" onclick="window.parent.location.href='?page=chatbot'">Xem chatbot AI</button>
+                        </div>
+                    </div>
+
+                    <div class="gt-image"></div>
+                </section>
+
+                <section class="gt-feature-bar">
+                    <div class="gt-feature">
+                        <div class="gt-feature-icon">🌿</div>
+                        <div>
+                            <div class="gt-feature-title">Không gian văn hóa</div>
+                            <div class="gt-feature-text">
+                                Tôn vinh vẻ đẹp di sản, bản sắc địa phương và giá trị truyền thống của Lào Cai.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gt-feature">
+                        <div class="gt-feature-icon">📍</div>
+                        <div>
+                            <div class="gt-feature-title">Dữ liệu địa phương</div>
+                            <div class="gt-feature-text">
+                                Kết nối thông tin về điểm đến, khu vực, mùa đẹp và nội dung giới thiệu rõ ràng.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gt-feature">
+                        <div class="gt-feature-icon">🤖</div>
+                        <div>
+                            <div class="gt-feature-title">Trợ lý AI thông minh</div>
+                            <div class="gt-feature-text">
+                                Hỗ trợ hỏi đáp, tư vấn lịch trình và giải đáp nhanh các câu hỏi cơ bản cho du khách.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gt-feature">
+                        <div class="gt-feature-icon">🛡️</div>
+                        <div>
+                            <div class="gt-feature-title">Định hướng bền vững</div>
+                            <div class="gt-feature-text">
+                                Ứng dụng công nghệ để quảng bá văn hóa địa phương theo hướng hiện đại và lâu dài.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="gt-bottom">
+                    <div class="gt-bottom-left">
+                        <div class="gt-kicker">Giới thiệu dự án</div>
+                        <h2 class="gt-bottom-title">Kiến tạo chuẩn mực khám phá mới</h2>
+                        <div class="gt-bottom-text">
+                            Lao Cai Heritage AI được xây dựng nhằm hỗ trợ giới thiệu danh lam thắng cảnh, di tích lịch sử và văn hóa
+                            địa phương bằng giao diện trực quan, dễ dùng. Dự án hướng đến việc kết hợp dữ liệu số với AI để nâng cao
+                            trải nghiệm tra cứu, tham khảo lịch trình và tiếp cận thông tin cho người dùng.
+                        </div>
+
+                        <button class="gt-small-btn" onclick="window.parent.location.href='?page=lichtrinh'">
+                            Xem lịch trình
+                        </button>
+                    </div>
+
+                    <div class="gt-bottom-right">
+                        <div class="gt-stats">
+                            <div class="gt-stat">
+                                <div class="gt-stat-value">{total_places}+</div>
+                                <div class="gt-stat-label">Điểm đến</div>
+                                <div class="gt-stat-sub">Nội dung trong hệ thống</div>
+                            </div>
+
+                            <div class="gt-stat">
+                                <div class="gt-stat-value">{total_routes}+</div>
+                                <div class="gt-stat-label">Lịch trình</div>
+                                <div class="gt-stat-sub">Gợi ý tham khảo</div>
+                            </div>
+
+                            <div class="gt-stat">
+                                <div class="gt-stat-value">{total_areas}+</div>
+                                <div class="gt-stat-label">Khu vực</div>
+                                <div class="gt-stat-sub">Phân loại dữ liệu</div>
+                            </div>
+
+                            <div class="gt-stat">
+                                <div class="gt-stat-value">{total_categories}+</div>
+                                <div class="gt-stat-label">Loại hình</div>
+                                <div class="gt-stat-sub">Trải nghiệm khám phá</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="gt-story-section">
+                    <div class="gt-story-grid">
+                        <div class="gt-collage-wrap">
+                            <div class="gt-collage-circle"></div>
+                            <div class="gt-badge-float">✦</div>
+                            <div class="gt-collage-card-1"></div>
+                            <div class="gt-collage-card-2"></div>
+                        </div>
+
+                        <div>
+                            <div class="gt-story-kicker">Giá trị cốt lõi</div>
+                            <h2 class="gt-story-title">Nền tảng hỗ trợ quảng bá văn hóa và du lịch địa phương</h2>
+                            <div class="gt-story-desc">
+                                Dự án không chỉ dừng ở việc hiển thị thông tin, mà còn hướng tới trải nghiệm tra cứu hiện đại,
+                                dễ tiếp cận và gần gũi hơn với học sinh, du khách và người dùng phổ thông. Giao diện được xây dựng
+                                theo hướng trực quan, nội dung rõ ràng và có thể phát triển lâu dài.
+                            </div>
+
+                            <div class="gt-mini-features">
+                                <div class="gt-mini-item">
+                                    <div class="gt-mini-icon">🧭</div>
+                                    <div>
+                                        <div class="gt-mini-title">Định vị nội dung rõ ràng</div>
+                                        <div class="gt-mini-text">Phân tách điểm đến, lịch trình và thuyết minh thành từng nhóm dễ tra cứu.</div>
+                                    </div>
+                                </div>
+
+                                <div class="gt-mini-item">
+                                    <div class="gt-mini-icon">📚</div>
+                                    <div>
+                                        <div class="gt-mini-title">Tăng giá trị học tập</div>
+                                        <div class="gt-mini-text">Giúp người dùng tìm hiểu lịch sử, văn hóa và thông tin địa phương thuận tiện hơn.</div>
+                                    </div>
+                                </div>
+
+                                <div class="gt-mini-item">
+                                    <div class="gt-mini-icon">⚙️</div>
+                                    <div>
+                                        <div class="gt-mini-title">Tích hợp AI thực tế</div>
+                                        <div class="gt-mini-text">Chatbot hỗ trợ hỏi đáp cơ bản, gợi ý lịch trình và trả lời theo dữ liệu hệ thống.</div>
+                                    </div>
+                                </div>
+
+                                <div class="gt-mini-item">
+                                    <div class="gt-mini-icon">🚀</div>
+                                    <div>
+                                        <div class="gt-mini-title">Dễ mở rộng về sau</div>
+                                        <div class="gt-mini-text">Có thể tiếp tục bổ sung phản hồi, dữ liệu mới và các tính năng nâng cao sau này.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button class="gt-story-btn" onclick="window.parent.location.href='?page=chatbot'">
+                                Tìm hiểu thêm
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="gt-services">
+                    <div class="gt-services-head">
+                        <div class="gt-services-kicker">Tính năng</div>
+                        <h2 class="gt-services-title">Các chức năng nổi bật</h2>
+                    </div>
+
+                    <div class="gt-service-grid">
+                        <div class="gt-service-card">
+                            <div>
+                                <div class="gt-service-number">01</div>
+                                <div class="gt-service-name">Giới thiệu điểm đến</div>
+                                <div class="gt-service-text">
+                                    Trình bày thông tin điểm đến bằng giao diện trực quan, dễ đọc và phù hợp với người dùng phổ thông.
+                                </div>
+                            </div>
+                            <div class="gt-service-image" style="background-image:url('{service_img_1}');"></div>
+                        </div>
+
+                        <div class="gt-service-card">
+                            <div>
+                                <div class="gt-service-number">02</div>
+                                <div class="gt-service-name">Lịch trình thông minh</div>
+                                <div class="gt-service-text">
+                                    Gợi ý hành trình tham khảo theo khu vực, loại hình và thông tin chi phí cơ bản trong hệ thống.
+                                </div>
+                            </div>
+                            <div class="gt-service-image" style="background-image:url('{service_img_2}');"></div>
+                        </div>
+
+                        <div class="gt-service-card">
+                            <div>
+                                <div class="gt-service-number">03</div>
+                                <div class="gt-service-name">Chatbot AI</div>
+                                <div class="gt-service-text">
+                                    Hỗ trợ đặt câu hỏi nhanh về địa điểm, mùa đẹp, lịch trình và các thông tin cần tra cứu cơ bản.
+                                </div>
+                            </div>
+                            <div class="gt-service-image" style="background-image:url('{service_img_3}');"></div>
+                        </div>
+
+                        <div class="gt-service-card">
+                            <div>
+                                <div class="gt-service-number">04</div>
+                                <div class="gt-service-name">Thuyết minh địa điểm</div>
+                                <div class="gt-service-text">
+                                    Tăng trải nghiệm khám phá bằng nội dung thuyết minh và phần trình bày sinh động ở trang chi tiết.
+                                </div>
+                            </div>
+                            <div class="gt-service-image" style="background-image:url('{service_img_4}');"></div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    components.html(html, height=2300, scrolling=False)
