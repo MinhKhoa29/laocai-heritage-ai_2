@@ -383,8 +383,7 @@ navbar_html = dedent(f"""
         <a href="?page=home" target="_self" class="{'active' if page == 'home' else ''}">Trang chủ</a>
         <a href="?page=diemden" target="_self" class="{'active' if page in ['diemden', 'diemden_detail'] else ''}">Điểm đến</a>
         <a href="?page=ai" target="_self" class="{'active' if page == 'ai' else ''}">Trợ lý AI</a>
-        <a href="?page=lichtrinh" target="_self" class="{'active' if page == 'lichtrinh' else ''}">Lịch trình</a>
-        <a href="?page=lienhe" target="_self" class="{'active' if page == 'lienhe' else ''}">Liên hệ</a>
+        <a href="?page=lichtrinh" target="_self" class="{'active' if page in ['lichtrinh', 'lichtrinh_detail'] else ''}">Lịch trình</a>
     </div>
 </div>
 """)
@@ -1533,6 +1532,7 @@ elif page == "lichtrinh":
     import json
     import math
     import re
+    import unicodedata
     from html import escape
     import streamlit.components.v1 as components
 
@@ -1555,6 +1555,29 @@ elif page == "lichtrinh":
             return 0
         digits = re.findall(r"\d+", str(value).replace(".", "").replace(",", ""))
         return int("".join(digits)) if digits else 0
+    
+    def safe_url(value, fallback="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"):
+        text = str(value).strip() if value is not None else ""
+        return escape(text if text else fallback, quote=True)
+
+    def itinerary_image(item):
+        for key in ["image", "cover", "thumbnail", "hero_image", "banner_image"]:
+            value = str(item.get(key, "")).strip()
+            if value:
+                return value
+        return "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
+
+    def make_slug(item):
+        raw = str(item.get("slug", "")).strip()
+        if raw:
+            return raw
+
+        text = f"{item.get('from', '')} {item.get('to', '')}"
+        text = text.replace("Đ", "D").replace("đ", "d")
+        text = unicodedata.normalize("NFD", text)
+        text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+        text = re.sub(r"[^a-zA-Z0-9]+", "-", text).strip("-").lower()
+        return text or "lich-trinh"
 
     destination_options = ["Tất cả"] + sorted({item.get("to", "") for item in lichtrinh_data if item.get("to")})
     category_options = ["Tất cả"] + sorted({item.get("category", "") for item in lichtrinh_data if item.get("category")})
@@ -1931,18 +1954,43 @@ elif page == "lichtrinh":
 
     .lt-card{
         position:relative;
+        min-height:430px;
+        perspective:1600px;
+    }
+
+    .lt-card-shell{
+        position:relative;
+        width:100%;
+        height:100%;
+        min-height:430px;
+        transform-style:preserve-3d;
+        transition:transform 0.82s cubic-bezier(0.22, 0.7, 0.18, 1);
+    }
+
+    .lt-card:hover .lt-card-shell{
+        transform:rotateY(-180deg);
+    }
+
+    .lt-card-face{
+        position:absolute;
+        inset:0;
+        border-radius:26px;
         overflow:hidden;
+        backface-visibility:hidden;
+        -webkit-backface-visibility:hidden;
+    }
+
+    .lt-card-front{
+        position:relative;
         background:linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
         border:1px solid #e5edf6;
-        border-radius:26px;
         padding:24px 22px 22px 22px;
-        min-height:408px;
         display:flex;
         flex-direction:column;
         box-shadow:0 18px 38px rgba(15,23,42,0.08);
     }
 
-    .lt-card::before{
+    .lt-card-front::before{
         content:"";
         position:absolute;
         top:0;
@@ -1950,6 +1998,89 @@ elif page == "lichtrinh":
         right:0;
         height:5px;
         background:linear-gradient(90deg, #1565c0 0%, #2b7fd3 52%, #43b0f1 100%);
+    }
+
+    .lt-card-back{
+        transform:rotateY(180deg);
+        background-size:cover;
+        background-position:center;
+        background-repeat:no-repeat;
+        box-shadow:0 18px 38px rgba(15,23,42,0.12);
+    }
+
+    .lt-card-back::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:linear-gradient(180deg, rgba(5,18,38,0.10) 0%, rgba(5,18,38,0.78) 100%);
+    }
+
+    .lt-back-inner{
+        position:relative;
+        z-index:2;
+        height:100%;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        align-items:center;        
+        padding:4px 18px 20px 18px;
+        color:#ffffff;
+    }
+
+    .lt-back-badge{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        align-self:flex-start;
+        margin-bottom:12px;
+        padding:8px 13px;
+        border-radius:999px;
+        background:rgba(255,255,255,0.16);
+        border:1px solid rgba(255,255,255,0.28);
+        font-size:13px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:0.06em;
+    }
+
+    .lt-back-route{
+        font-size:26px;
+        font-weight:900;
+        line-height:1.25;
+        margin-bottom:10px;
+        text-transform:uppercase;
+        text-shadow:0 4px 14px rgba(0,0,0,0.28);
+    }
+
+    .lt-back-desc{
+        font-size:15px;
+        line-height:1.75;
+        color:rgba(255,255,255,0.92);
+        margin-bottom:18px;
+        max-width:92%;
+    }
+
+    .lt-view-btn{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        align-self:center;
+        min-width:150px;
+        height:48px;
+        border:none;
+        border-radius:14px;
+        background:#ffffff;
+        color:#0f172a;
+        font-size:15px;
+        font-weight:900;
+        cursor:pointer;
+        box-shadow:0 14px 26px rgba(0,0,0,0.18);
+        transition:transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .lt-view-btn:hover{
+        transform:translateY(-2px);
+        box-shadow:0 18px 32px rgba(0,0,0,0.24);
     }
 
     .lt-card-top{
@@ -1992,8 +2123,8 @@ elif page == "lichtrinh":
     }
 
     .lt-info-item{
-        background:#f8fafc;
-        border:1px solid #edf2f7;
+        background:#f1f5f9;
+        border:1px solid #dde6ef;
         border-radius:18px;
         padding:14px;
         min-height:88px;
@@ -2009,7 +2140,6 @@ elif page == "lichtrinh":
         font-size:17px;
         font-weight:800;
         text-transform:uppercase;
-        letter-spacing:0em;
         color:#64748b;
         margin-bottom:8px;
         text-align:center;
@@ -2089,8 +2219,8 @@ elif page == "lichtrinh":
         font-weight:900;
         line-height:1.2;
         color:#ef4444;
-        word-break: break-word;
-        overflow-wrap: anywhere;
+        word-break:break-word;
+        overflow-wrap:anywhere;
     }
 
     .lt-price-sub{
@@ -2133,18 +2263,17 @@ elif page == "lichtrinh":
 
     @media (max-width: 760px){
         .lt-results-wrap{
-            padding: 0;
+            padding:0;
         }
 
         .lt-grid{
-            grid-template-columns: 1fr;
+            grid-template-columns:1fr;
             gap:18px;
         }
 
-        .lt-card{
-            min-height:auto;
-            padding:22px 18px 20px 18px;
-            border-radius:22px;
+        .lt-card,
+        .lt-card-shell{
+            min-height:420px;
         }
 
         .lt-card-top,
@@ -2158,7 +2287,7 @@ elif page == "lichtrinh":
         }
 
         .lt-info-grid{
-            grid-template-columns: 1fr;
+            grid-template-columns:1fr;
         }
 
         .lt-bottom-note,
@@ -2170,6 +2299,10 @@ elif page == "lichtrinh":
 
         .lt-price-value{
             font-size:26px;
+        }
+
+        .lt-back-route{
+            font-size:22px;
         }
 
         .lt-empty-title{
@@ -2194,56 +2327,103 @@ elif page == "lichtrinh":
             hotel_name = safe_text(item.get("hotel_name"), "Đang cập nhật")
             hotel_price = safe_text(item.get("hotel_price"), "Liên hệ")
             category = safe_text(item.get("category"), "Lịch trình")
+            route_text = f"{safe_text(item.get('from'))} → {safe_text(item.get('to'))}"
+            cover_image = safe_url(itinerary_image(item))
+            slug_value = make_slug(item)
+
+            hover_desc = safe_text(
+                item.get("note") or item.get("short_desc"),
+                "Nhấn để xem chi tiết lịch trình, chi phí tham khảo và thông tin lưu trú."
+            )
 
             cards_html += f"""
             <div class="lt-card">
-                <div class="lt-card-top">
-                    <div class="lt-route">{safe_text(item.get('from'))} → {safe_text(item.get('to'))}</div>
-                    <div class="lt-badge">{category}</div>
-                </div>
+                <div class="lt-card-shell">
 
-                <div class="lt-info-grid">
-                    <div class="lt-info-item">
-                        <div class="lt-info-label">Quãng đường</div>
-                        <div class="lt-info-value">{safe_text(item.get('distance_km'))}</div>
-                    </div>
-                    <div class="lt-info-item">
-                        <div class="lt-info-label">Thời gian</div>
-                        <div class="lt-info-value">{safe_text(item.get('time_estimate'))}</div>
-                    </div>
-                    <div class="lt-info-item">
-                        <div class="lt-info-label">Phương tiện</div>
-                        <div class="lt-info-value">{safe_text(item.get('transport_name'))}</div>
-                    </div>
-                    <div class="lt-info-item">
-                        <div class="lt-info-label">Giá vé tham quan</div>
-                        <div class="lt-info-value">{ticket_price}</div>
-                    </div>
-                </div>
+                    <div class="lt-card-face lt-card-front">
+                        <div class="lt-card-top">
+                            <div class="lt-route">{route_text}</div>
+                            <div class="lt-badge">{category}</div>
+                        </div>
 
-                <div class="lt-hotel-box">
-                    <div class="lt-hotel-title">Khách sạn / Nhà nghỉ gợi ý</div>
-                    <div class="lt-hotel-value">{hotel_name} • {hotel_price}</div>
-                </div>
+                        <div class="lt-info-grid">
+                            <div class="lt-info-item">
+                                <div class="lt-info-label">Quãng đường</div>
+                                <div class="lt-info-value">{safe_text(item.get('distance_km'))}</div>
+                            </div>
+                            <div class="lt-info-item">
+                                <div class="lt-info-label">Thời gian</div>
+                                <div class="lt-info-value">{safe_text(item.get('time_estimate'))}</div>
+                            </div>
+                            <div class="lt-info-item">
+                                <div class="lt-info-label">Phương tiện</div>
+                                <div class="lt-info-value">{safe_text(item.get('transport_name'))}</div>
+                            </div>
+                            <div class="lt-info-item">
+                                <div class="lt-info-label">Giá vé tham quan</div>
+                                <div class="lt-info-value">{ticket_price}</div>
+                            </div>
+                        </div>
 
-                <div class="lt-divider"></div>
+                        <div class="lt-hotel-box">
+                            <div class="lt-hotel-title">Khách sạn / Nhà nghỉ gợi ý</div>
+                            <div class="lt-hotel-value">{hotel_name} • {hotel_price}</div>
+                        </div>
 
-                <div class="lt-bottom">
-                    <div class="lt-bottom-note">
-                        Giá xe tham khảo: <strong>{transport_price}</strong><br>
-                        Hành trình hiển thị theo bộ lọc bạn đã chọn.
+                        <div class="lt-divider"></div>
+
+                        <div class="lt-bottom">
+                            <div class="lt-bottom-note">
+                                Giá xe tham khảo: <strong>{transport_price}</strong><br>
+                                Hành trình hiển thị theo bộ lọc bạn đã chọn.
+                            </div>
+                            <div class="lt-price-block">
+                                <div class="lt-price-caption">Giá từ / khách</div>
+                                <div class="lt-price-value">{total_price}</div>
+                                <div class="lt-price-sub">Đã gồm chi phí tổng quan</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="lt-price-block">
-                        <div class="lt-price-caption">Giá từ / khách</div>
-                        <div class="lt-price-value">{total_price}</div>
-                        <div class="lt-price-sub">Đã gồm chi phí tổng quan</div>
+
+                    <div class="lt-card-face lt-card-back" style="background-image:url('{cover_image}');">
+                        <div class="lt-back-inner">
+                            <div class="lt-back-badge">{category}</div>
+                            <div class="lt-back-route">{route_text}</div>
+                            <div class="lt-back-desc">{hover_desc}</div>
+                            <button class="lt-view-btn" onclick="openLichTrinhDetail('{slug_value}')">
+                                Xem chi tiết
+                            </button>
+                        </div>
                     </div>
+
                 </div>
             </div>
             """
-        cards_html += '</div>'
+
+        cards_html += "</div>"
+
+        cards_html += """
+        <script>
+        function openLichTrinhDetail(slug){
+            try{
+                const baseUrl = document.referrer
+                    ? new URL(document.referrer)
+                    : new URL(window.parent.location.href);
+
+                baseUrl.searchParams.set("page", "lichtrinh_detail");
+                baseUrl.searchParams.set("slug", slug);
+                baseUrl.hash = "";
+
+                window.open(baseUrl.toString(), "_blank", "noopener,noreferrer");
+            }catch(err){
+                window.open("?page=lichtrinh_detail&slug=" + encodeURIComponent(slug), "_blank", "noopener,noreferrer");
+            }
+        }
+        </script>
+        """
+
         rows = math.ceil(result_count / 3) if result_count else 1
-        height = max(500, rows * 580)
+        height = max(520, rows * 580)
     else:
         cards_html += """
         <div class="lt-empty">
@@ -2256,7 +2436,7 @@ elif page == "lichtrinh":
         """
         height = 320
 
-    cards_html += '</div>'
+    cards_html += "</div>"
     components.html(card_css + cards_html, height=height, scrolling=False)
 
     # Lưu ý
@@ -2373,6 +2553,623 @@ elif page == "lichtrinh":
         </div>
     </div>
     """, height=230, scrolling=False)
+
+elif page == "lichtrinh_detail":
+    import os
+    import json
+    import re
+    import base64
+    import unicodedata
+    from html import escape
+    from string import Template
+    from urllib.parse import quote_plus
+    import streamlit.components.v1 as components
+
+    try:
+        with open("lichtrinh.json", "r", encoding="utf-8") as f:
+            lichtrinh_data = json.load(f)
+    except Exception as e:
+        st.error(f"Lỗi đọc file lichtrinh.json: {e}")
+        st.stop()
+
+    def clean_text(value):
+        if value is None:
+            return ""
+        return str(value).replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    def normalize_text(value):
+        return clean_text(value).lower()
+
+    def safe_text(value, fallback="Đang cập nhật"):
+        text = clean_text(value)
+        return escape(text if text else fallback)
+
+    def safe_url(value, fallback="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"):
+        text = clean_text(value)
+        return escape(text if text else fallback, quote=True)
+
+    def make_slug(item):
+        raw = clean_text(item.get("slug"))
+        if raw:
+            return raw
+
+        text = f"{item.get('from', '')} {item.get('to', '')}"
+        text = text.replace("Đ", "D").replace("đ", "d")
+        text = unicodedata.normalize("NFD", text)
+        text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+        text = re.sub(r"[^a-zA-Z0-9]+", "-", text).strip("-").lower()
+        return text or "lich-trinh"
+
+    def get_images(route):
+        fallback = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
+        images = []
+
+        for key in [
+            "image", "image_2", "image_3", "image_4", "image_5",
+            "cover", "thumbnail", "hero_image", "banner_image"
+        ]:
+            val = clean_text(route.get(key))
+            if val:
+                images.append(val)
+
+        for key in ["gallery", "images", "detail_images"]:
+            val = route.get(key)
+            if isinstance(val, list):
+                for item in val:
+                    item_text = clean_text(item)
+                    if item_text:
+                        images.append(item_text)
+
+        unique_images = []
+        seen = set()
+        for img in images:
+            if img not in seen:
+                seen.add(img)
+                unique_images.append(img)
+
+        if not unique_images:
+            unique_images = [fallback]
+
+        while len(unique_images) < 5:
+            unique_images.append(unique_images[-1])
+
+        return [safe_url(img, fallback) for img in unique_images[:5]]
+
+    def split_paragraphs(*values):
+        results = []
+        seen = set()
+
+        for value in values:
+            text = clean_text(value)
+            if not text:
+                continue
+
+            parts = [p.strip() for p in text.split("\n") if p.strip()]
+            if not parts:
+                parts = [text]
+
+            for part in parts:
+                normalized = " ".join(part.split()).strip()
+                if normalized and normalized.lower() not in seen:
+                    seen.add(normalized.lower())
+                    results.append(normalized)
+        return results
+
+    def build_highlights(route):
+        highlights = []
+
+        if clean_text(route.get("distance_km")):
+            highlights.append(f"Quãng đường dự kiến: {clean_text(route.get('distance_km'))}.")
+        if clean_text(route.get("time_estimate")):
+            highlights.append(f"Thời gian di chuyển ước tính: {clean_text(route.get('time_estimate'))}.")
+        if clean_text(route.get("transport_name")):
+            highlights.append(f"Phương tiện gợi ý: {clean_text(route.get('transport_name'))}.")
+        if clean_text(route.get("ticket_price")):
+            highlights.append(f"Vé tham quan tham khảo: {clean_text(route.get('ticket_price'))}.")
+        if clean_text(route.get("hotel_name")):
+            highlights.append(f"Lưu trú gợi ý: {clean_text(route.get('hotel_name'))}.")
+        if clean_text(route.get("note")):
+            note_text = clean_text(route.get("note"))
+            if len(note_text) > 140:
+                note_text = note_text[:140].rsplit(" ", 1)[0] + "..."
+            highlights.append(note_text)
+
+        if not highlights:
+            highlights = [
+                "Lịch trình đang được cập nhật thêm điểm nổi bật.",
+                "Bạn có thể xem chi phí, phương tiện và lưu trú tham khảo bên dưới."
+            ]
+
+        return highlights[:6]
+
+    def build_map_url(route):
+        for key in ["map_embed", "iframe_map", "google_map", "map_url", "location_map"]:
+            raw = clean_text(route.get(key))
+            if not raw:
+                continue
+
+            if raw.startswith("<iframe"):
+                match = re.search(r'''src=["']([^"']+)["']''', raw)
+                if match:
+                    return escape(match.group(1), quote=True)
+
+            if raw.startswith("http://") or raw.startswith("https://"):
+                return escape(raw, quote=True)
+
+        lat = clean_text(route.get("lat"))
+        lng = clean_text(route.get("lng"))
+        if lat and lng:
+            return escape(f"https://www.google.com/maps?q={lat},{lng}&output=embed", quote=True)
+
+        hotel_name = clean_text(route.get("hotel_name"))
+        destination = clean_text(route.get("to"))
+        area_query = " ".join([x for x in [hotel_name, destination, "Lào Cai"] if x]).strip()
+
+        if not area_query:
+            area_query = "Lào Cai"
+
+        return escape(f"https://www.google.com/maps?q={quote_plus(area_query)}&output=embed", quote=True)
+
+    slug = clean_text(st.query_params.get("slug", ""))
+
+    selected_route = None
+    for item in lichtrinh_data:
+        if normalize_text(make_slug(item)) == normalize_text(slug):
+            selected_route = item
+            break
+
+    if not selected_route:
+        st.error("Không tìm thấy lịch trình.")
+        st.stop()
+
+    from_place = clean_text(selected_route.get("from")) or "Điểm khởi hành"
+    to_place = clean_text(selected_route.get("to")) or "Điểm đến"
+    route_title = f"{from_place} - {to_place}"
+    category = clean_text(selected_route.get("category")) or "Lịch trình"
+    route_code = clean_text(selected_route.get("code")) or clean_text(selected_route.get("tour_code")) or clean_text(selected_route.get("id")) or slug.upper()
+    note_text = clean_text(selected_route.get("note")) or clean_text(selected_route.get("short_desc")) or "Lịch trình này đang được cập nhật thêm phần mô tả chi tiết."
+    total_price = clean_text(selected_route.get("total_price")) or "Liên hệ"
+    transport_price = clean_text(selected_route.get("transport_price")) or "Đang cập nhật"
+    ticket_price = clean_text(selected_route.get("ticket_price")) or "0đ"
+    transport_name = clean_text(selected_route.get("transport_name")) or "Đang cập nhật"
+    distance_km = clean_text(selected_route.get("distance_km")) or "Đang cập nhật"
+    time_estimate = clean_text(selected_route.get("time_estimate")) or "Đang cập nhật"
+    hotel_name = clean_text(selected_route.get("hotel_name")) or "Đang cập nhật"
+    hotel_price = clean_text(selected_route.get("hotel_price")) or "Liên hệ"
+
+    paragraphs = split_paragraphs(selected_route.get("note"), selected_route.get("short_desc"))
+    if not paragraphs:
+        paragraphs = [
+            f"Hành trình từ {from_place} đến {to_place} phù hợp cho du khách muốn khám phá vẻ đẹp địa phương một cách thuận tiện.",
+            "Lịch trình hiện đang được hệ thống tổng hợp với các thông tin tham khảo về phương tiện, thời gian, chi phí và lưu trú."
+        ]
+
+    highlights = build_highlights(selected_route)
+    images = get_images(selected_route)
+    map_url = build_map_url(selected_route)
+
+    highlight_html = "".join(f"<li>{escape(item)}</li>" for item in highlights)
+
+    intro_html = "".join(
+        f"<p>{escape(paragraph)}</p>"
+        for paragraph in paragraphs[:3]
+    )
+
+    html_template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            html, body {
+                margin: 0;
+                padding: 0;
+                background: #eef2e6;
+                font-family: Arial, sans-serif;
+                color: #0f172a;
+            }
+
+            .ltd2-page {
+                width: 100%;
+                padding: 18px 16px 40px 16px;
+                background: #eef2e6;
+            }
+
+            .ltd2-wrap {
+                max-width: 1320px;
+                margin: 0 auto;
+            }
+
+            .ltd2-title {
+                font-size: 26px;
+                line-height: 1.25;
+                font-weight: 900;
+                color: #0b4f8a;
+                margin: 0 0 8px 0;
+            }
+
+            .ltd2-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 16px;
+                align-items: center;
+                margin-bottom: 16px;
+                color: #475569;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+
+            .ltd2-meta strong {
+                color: #0f172a;
+            }
+
+            .ltd2-gallery {
+                display: grid;
+                grid-template-columns: 1.55fr 1fr;
+                gap: 10px;
+                margin-bottom: 16px;
+            }
+
+            .ltd2-main-photo {
+                min-height: 300px;
+                border-radius: 10px;
+                background-size: cover;
+                background-position: center;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 12px 24px rgba(15, 23, 42, 0.10);
+            }
+
+            .ltd2-main-photo::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.25) 100%);
+            }
+
+            .ltd2-main-badge {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                z-index: 2;
+                background: #e53935;
+                color: #ffffff;
+                font-size: 12px;
+                font-weight: 800;
+                padding: 6px 10px;
+                border-radius: 6px;
+            }
+
+            .ltd2-side-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .ltd2-side-photo {
+                min-height: 145px;
+                border-radius: 10px;
+                background-size: cover;
+                background-position: center;
+                box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+            }
+
+            .ltd2-top-grid {
+                display: grid;
+                grid-template-columns: 1.7fr 0.8fr;
+                gap: 16px;
+                margin-bottom: 16px;
+            }
+
+            .ltd2-bottom-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+
+            .ltd2-card {
+                background: #ffffff;
+                border: 1px solid #dfe6d6;
+                border-radius: 16px;
+                padding: 18px;
+                box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+            }
+
+            .ltd2-card-title {
+                font-size: 18px;
+                font-weight: 900;
+                color: #1f2937;
+                margin-bottom: 12px;
+            }
+
+            .ltd2-list {
+                margin: 0;
+                padding-left: 22px;
+            }
+
+            .ltd2-list li {
+                margin-bottom: 9px;
+                color: #475569;
+                font-size: 15px;
+                line-height: 1.7;
+            }
+
+            .ltd2-price-card {
+                min-height: 100%;
+                background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+                border: 1px solid #dbe7f3;
+                border-radius: 18px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                padding: 26px 22px;
+                box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+            }
+
+            .ltd2-price-label {
+                font-size: 20px;
+                font-weight: 800;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: #64748b;
+                margin-bottom: 12px;
+            }
+
+            .ltd2-price-value {
+                font-size: 42px;
+                line-height: 1.15;
+                font-weight: 900;
+                color: #1565c0;
+                word-break: break-word;
+            }
+
+            .ltd2-price-sub {
+                margin-top: 12px;
+                font-size: 14px;
+                line-height: 1.75;
+                color: #475569;
+                max-width: 250px;
+            }
+
+            .ltd2-price-sub {
+                margin-top: 10px;
+                font-size: 13px;
+                line-height: 1.7;
+                color: #475569;
+                max-width: 230px;
+            }
+
+            .ltd2-text p {
+                margin: 0 0 12px 0;
+                color: #374151;
+                font-size: 16px;
+                line-height: 1.85;
+            }
+
+            .ltd2-info-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+
+            .ltd2-info-item {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 12px 14px;
+            }
+
+            .ltd2-info-item span {
+                display: block;
+                font-size: 12px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: #64748b;
+                margin-bottom: 6px;
+            }
+
+            .ltd2-info-item strong {
+                display: block;
+                font-size: 14px;
+                line-height: 1.7;
+                color: #0f172a;
+                font-weight: 800;
+                word-break: break-word;
+            }
+
+            .ltd2-map {
+                width: 100%;
+                height: 300px;
+                border: none;
+                border-radius: 12px;
+                overflow: hidden;
+            }
+
+            @media (max-width: 980px) {
+                .ltd2-gallery,
+                .ltd2-top-grid,
+                .ltd2-bottom-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .ltd2-side-grid {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+
+            @media (max-width: 680px) {
+                .ltd2-page {
+                    padding: 14px 10px 28px 10px;
+                }
+
+                .ltd2-title {
+                    font-size: 22px;
+                }
+
+                .ltd2-meta {
+                    gap: 10px;
+                    font-size: 13px;
+                }
+
+                .ltd2-side-grid,
+                .ltd2-info-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .ltd2-main-photo,
+                .ltd2-side-photo {
+                    min-height: 220px;
+                }
+
+                .ltd2-price-value {
+                    font-size: 28px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="ltd2-page">
+            <div class="ltd2-wrap">
+                <h1 class="ltd2-title">$route_title</h1>
+
+                <div class="ltd2-meta">
+                    <div><strong>Loại hình:</strong> $category</div>
+                    <div><strong>Khởi hành:</strong> $from_place</div>
+                    <div><strong>Mã tour:</strong> $route_code</div>
+                </div>
+
+                <div class="ltd2-gallery">
+                    <div class="ltd2-main-photo" style="background-image:url('$image_1');">
+                        <div class="ltd2-main-badge">Lịch trình nổi bật</div>
+                    </div>
+
+                    <div class="ltd2-side-grid">
+                        <div class="ltd2-side-photo" style="background-image:url('$image_2');"></div>
+                        <div class="ltd2-side-photo" style="background-image:url('$image_3');"></div>
+                        <div class="ltd2-side-photo" style="background-image:url('$image_4');"></div>
+                        <div class="ltd2-side-photo" style="background-image:url('$image_5');"></div>
+                    </div>
+                </div>
+
+                <div class="ltd2-top-grid">
+                    <div class="ltd2-card">
+                        <div class="ltd2-card-title">Điểm nổi bật tour</div>
+                        <ul class="ltd2-list">
+                            $highlight_html
+                        </ul>
+                    </div>
+
+                    <div class="ltd2-card ltd2-price-card">
+                        <div class="ltd2-price-label">Chi phí tham khảo</div>
+                        <div class="ltd2-price-value">$total_price</div>
+                        <div class="ltd2-price-sub">
+                            Mức giá có thể thay đổi tùy thời điểm, phương tiện và dịch vụ lưu trú thực tế.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ltd2-bottom-grid">
+                    <div class="ltd2-card">
+                        <div class="ltd2-card-title">Giới thiệu</div>
+                        <div class="ltd2-text">
+                            $intro_html
+                        </div>
+                    </div>
+
+                    <div class="ltd2-card">
+                        <div class="ltd2-card-title">Thông tin khách sạn</div>
+
+                        <div class="ltd2-info-grid">
+                            <div class="ltd2-info-item">
+                                <span>Khách sạn / nhà nghỉ</span>
+                                <strong>$hotel_name</strong>
+                            </div>
+
+                            <div class="ltd2-info-item">
+                                <span>Giá lưu trú</span>
+                                <strong>$hotel_price</strong>
+                            </div>
+
+                            <div class="ltd2-info-item">
+                                <span>Phương tiện</span>
+                                <strong>$transport_name</strong>
+                            </div>
+
+                            <div class="ltd2-info-item">
+                                <span>Thời gian</span>
+                                <strong>$time_estimate</strong>
+                            </div>
+
+                            <div class="ltd2-info-item">
+                                <span>Quãng đường</span>
+                                <strong>$distance_km</strong>
+                            </div>
+
+                            <div class="ltd2-info-item">
+                                <span>Vé tham quan</span>
+                                <strong>$ticket_price</strong>
+                            </div>
+
+                            <div class="ltd2-info-item">
+                                <span>Giá xe</span>
+                                <strong>$transport_price</strong>
+                            </div>
+
+                            <div class="ltd2-info-item">
+                                <span>Điểm đến</span>
+                                <strong>$to_place</strong>
+                            </div>
+                        </div>
+
+                        <iframe
+                            class="ltd2-map"
+                            src="$map_url"
+                            loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+
+    html_output = html_template.substitute(
+        route_title=escape(route_title),
+        category=escape(category),
+        from_place=escape(from_place),
+        to_place=escape(to_place),
+        route_code=escape(route_code if route_code else "Đang cập nhật"),
+        image_1=images[0],
+        image_2=images[1],
+        image_3=images[2],
+        image_4=images[3],
+        image_5=images[4],
+        highlight_html=highlight_html,
+        total_price=escape(total_price),
+        intro_html=intro_html,
+        hotel_name=escape(hotel_name),
+        hotel_price=escape(hotel_price),
+        transport_name=escape(transport_name),
+        time_estimate=escape(time_estimate),
+        distance_km=escape(distance_km),
+        ticket_price=escape(ticket_price),
+        transport_price=escape(transport_price),
+        map_url=map_url,
+    )
+
+    page_height = 1650 + max(0, len(" ".join(paragraphs)) // 400) * 220
+    components.html(html_output, height=page_height, scrolling=False)
 
 elif page == "diemden":
     import json
@@ -3017,7 +3814,9 @@ elif page == "diemden":
     components.html(cards_css + cards_html, height=cards_height, scrolling=False)
 
 elif page == "diemden_detail":
+    import os
     import json
+    import base64
     from html import escape
     from string import Template
     import streamlit.components.v1 as components
@@ -3044,6 +3843,75 @@ elif page == "diemden_detail":
     def safe_url(value, fallback="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"):
         text = str(value).strip() if value is not None else ""
         return escape(text if text else fallback, quote=True)
+    
+    DEFAULT_DETAIL_IMAGE = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
+
+    def file_to_data_uri(path):
+        ext = os.path.splitext(path)[1].lower()
+        mime_map = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".webp": "image/webp",
+            ".gif": "image/gif",
+            ".mp3": "audio/mpeg",
+            ".wav": "audio/wav",
+            ".ogg": "audio/ogg",
+            ".m4a": "audio/mp4",
+        }
+        mime_type = mime_map.get(ext, "application/octet-stream")
+
+        try:
+            with open(path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            return f"data:{mime_type};base64,{encoded}"
+        except Exception:
+            return ""
+
+    def asset_to_src(value, fallback=DEFAULT_DETAIL_IMAGE):
+        raw_value = str(value).strip() if value is not None else ""
+        raw_fallback = str(fallback).strip() if fallback is not None else ""
+
+        candidates = []
+        if raw_value:
+            candidates.append(raw_value)
+        if raw_fallback:
+            candidates.append(raw_fallback)
+
+        for candidate in candidates:
+            if candidate.startswith(("http://", "https://", "data:")):
+                return escape(candidate, quote=True)
+
+            if os.path.exists(candidate):
+                data_uri = file_to_data_uri(candidate)
+                if data_uri:
+                    return data_uri
+
+        return escape(DEFAULT_DETAIL_IMAGE, quote=True)
+
+    def get_audio_src(place):
+        candidates = []
+
+        for key in ["audio_file", "audio", "audio_path", "thuyet_minh", "thuyetminh"]:
+            val = str(place.get(key, "")).strip()
+            if val:
+                candidates.append(val)
+
+        slug_value = str(place.get("slug", "")).strip()
+        if slug_value:
+            for ext in [".mp3", ".wav", ".m4a", ".ogg"]:
+                candidates.append(os.path.join("assets", "audio", f"{slug_value}{ext}"))
+
+        for candidate in candidates:
+            if candidate.startswith(("http://", "https://", "data:")):
+                return escape(candidate, quote=True)
+
+            if os.path.exists(candidate):
+                data_uri = file_to_data_uri(candidate)
+                if data_uri:
+                    return data_uri
+
+        return ""
 
     def split_paragraphs(*values):
         results = []
@@ -3079,7 +3947,6 @@ elif page == "diemden_detail":
         return []
 
     def get_images(place):
-        fallback = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
         images = []
 
         for key in ["image", "image_2", "image_3", "image_4", "image_5", "hero_image", "banner_image"]:
@@ -3102,12 +3969,12 @@ elif page == "diemden_detail":
                 unique_images.append(img)
 
         if not unique_images:
-            unique_images = [fallback]
+            unique_images = [DEFAULT_DETAIL_IMAGE]
 
-        while len(unique_images) < 6:
+        while len(unique_images) < 8:
             unique_images.append(unique_images[-1])
 
-        return [safe_url(x, fallback) for x in unique_images[:6]]
+        return [asset_to_src(x, DEFAULT_DETAIL_IMAGE) for x in unique_images[:8]]
 
     slug = str(st.query_params.get("slug", "")).strip()
 
@@ -3168,6 +4035,36 @@ elif page == "diemden_detail":
     hero_subtitle = short_line(short_desc_raw or intro_1, 160)
 
     images = get_images(selected_place)
+    team_image_src = asset_to_src("assets/anime_team.png", images[0])
+    audio_src = get_audio_src(selected_place)
+
+    narration_gallery = images[:]
+    while len(narration_gallery) < 8:
+        narration_gallery.append(narration_gallery[-1])
+    narration_gallery = narration_gallery[:8]
+
+    narration_image_1 = narration_gallery[0]
+    narration_image_2 = narration_gallery[1]
+    narration_image_3 = narration_gallery[2]
+    narration_image_4 = narration_gallery[3]
+    narration_image_5 = narration_gallery[4]
+    narration_image_6 = narration_gallery[5]
+    narration_image_7 = narration_gallery[6]
+    narration_image_8 = narration_gallery[7]
+
+    if audio_src:
+        narration_audio_html = f"""
+        <div class="ddt-audio-wrap">
+            <audio controls preload="metadata" src="{audio_src}"></audio>
+            <div class="ddt-audio-note">Bài thuyết minh riêng cho: {escape(name_raw)}</div>
+        </div>
+        """
+    else:
+        narration_audio_html = """
+        <div class="ddt-audio-empty">
+            Chưa tìm thấy file thuyết minh cho địa điểm này.
+        </div>
+        """
     hero_image = images[0]
     intro_image_big = images[0]
     intro_image_small = images[1]
@@ -3189,7 +4086,65 @@ elif page == "diemden_detail":
     else:
         highlight_html = '<span class="ddt-chip">Đang cập nhật</span>'
 
-    page_height = 3200 + max(0, len(full_desc_raw) // 500) * 160
+    news_titles = highlights[:5] if highlights else [
+        f"Không gian nổi bật tại {name_raw}",
+        f"Du khách khám phá {name_raw}",
+        f"Hoạt động trải nghiệm quanh {name_raw}",
+        f"Góc nhìn văn hóa tại {name_raw}",
+        f"Hình ảnh ấn tượng về {name_raw}",
+    ]
+
+    while len(news_titles) < 5:
+        news_titles.append(news_titles[-1])
+
+    news_images = [images[0], images[1], images[2], images[3], images[4]]
+
+    news_cards_html = "".join(
+        f'''
+        <div class="ddt-news-card">
+            <div class="ddt-news-image" style="background-image:url('{news_images[i]}');"></div>
+            <div class="ddt-news-caption">{escape(news_titles[i])}</div>
+        </div>
+        '''
+        for i in range(5)
+    )
+
+    activity_title_seed = highlights[:6] if highlights else [
+        f"Hoạt động nổi bật tại {name_raw}",
+        f"Thông báo về {name_raw}",
+        f"Cập nhật trải nghiệm tại {name_raw}",
+        f"Sự kiện quanh {name_raw}",
+        f"Góc nhìn mới về {name_raw}",
+        f"Tin tức tham quan {name_raw}",
+    ]
+
+    while len(activity_title_seed) < 6:
+        activity_title_seed.append(activity_title_seed[-1])
+
+    activity_desc_seed = [
+        short_line(culture_1, 120),
+        short_line(culture_2, 120),
+        short_line(intro_1, 120),
+        short_line(intro_2, 120),
+        short_line(standout_text, 120),
+        short_line(visit_text, 120),
+    ]
+
+    activity_date_value = clean_text(selected_place.get("updated_at")) or "Đang cập nhật"
+
+    activity_cards_html = "".join(
+        f'''
+        <div class="ddt-activity-card">
+            <div class="ddt-activity-image" style="background-image:url('{images[i]}');"></div>
+            <div class="ddt-activity-title-card">{escape(activity_title_seed[i])}</div>
+            <div class="ddt-activity-desc">{escape(activity_desc_seed[i])}</div>
+            <div class="ddt-activity-date">{escape(activity_date_value)}</div>
+        </div>
+        '''
+        for i in range(6)
+    )
+
+    page_height = 5850 + max(0, len(full_desc_raw) // 500) * 220
 
     html_template = Template("""
     <style>
@@ -3215,6 +4170,160 @@ elif page == "diemden_detail":
             margin: 0 auto;
             padding: 0 24px;
         }
+                             
+        .ddt-narration-section {
+            padding: 42px 0 8px 0;
+        }
+
+        .ddt-narration-box {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 28px 0;
+            display: grid;
+            grid-template-columns: 430px 1fr 430px;
+            gap: 36px;
+            align-items: center;
+            box-shadow: none;
+        }
+                                    
+        .ddt-narration-section .ddt-wrap {
+            max-width: 1500px;
+            padding: 0 18px;
+        }
+
+        .ddt-team-block {
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .ddt-team-hello {
+            position: absolute;
+            top: 6px;
+            left: 0;
+            font-size: 46px;
+            font-weight: 900;
+            color: #7ed957;
+            transform: rotate(-10deg);
+            text-shadow: 0 4px 10px rgba(0,0,0,0.10);
+            text-transform: uppercase;
+        }
+
+        .ddt-team-image {
+            width: 100%;
+            max-width: 420px;
+            object-fit: contain;
+            display: block;
+            filter: drop-shadow(0 10px 18px rgba(15,23,42,0.10));
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 72%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 72%, rgba(0,0,0,0) 100%);
+        }
+                             
+        .ddt-narration-center {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .ddt-narration-kicker {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .ddt-narration-title {
+            font-size: 60px;
+            line-height: 0.95;
+            margin: 0;
+            color: #2f46c7;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .ddt-narration-subtitle {
+            font-size: 22px;
+            line-height: 1.4;
+            font-weight: 800;
+            color: #111827;
+            text-transform: uppercase;
+            margin-top: 5px;
+            margin-left: 107px;
+        }
+        .ddt-narration-place {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .ddt-audio-wrap {
+            width: 100%;
+            margin-top: 20px;
+            background: #ffffff;
+            border: 1px solid #eadcff;
+            border-radius: 18px;
+            padding: 14px 16px 12px 16px;
+            box-shadow: 0 10px 20px rgba(168,85,247,0.08);
+        }
+
+        .ddt-audio-wrap audio {
+            width: 100%;
+            height: 44px;
+        }
+
+        .ddt-audio-note {
+            margin-top: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #7c3aed;
+            font-weight: 700;
+        }
+
+        .ddt-audio-empty {
+            width: 100%;
+            margin-top: 20px;
+            padding: 18px 16px;
+            border-radius: 18px;
+            border: 1px dashed #cbd5e1;
+            background: #ffffff;
+            color: #64748b;
+            font-size: 15px;
+            line-height: 1.7;
+            font-weight: 700;
+        }
+
+        .ddt-narration-collage {
+            display: grid;
+            grid-template-columns: 56px 84px 124px 84px 56px;
+            grid-template-rows: 52px 80px 88px 80px 52px;
+            gap: 10px;
+            justify-content: center;
+            align-content: center;
+        }
+
+        .ddt-narration-item {
+            background-size: cover;
+            background-position: center;
+            border: 3px solid #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(15,23,42,0.10);
+        }
+
+        .ddt-ni-1 { grid-column: 1 / 2; grid-row: 2 / 4; }
+        .ddt-ni-2 { grid-column: 2 / 3; grid-row: 1 / 3; }
+        .ddt-ni-3 { grid-column: 3 / 4; grid-row: 1 / 3; }
+        .ddt-ni-4 { grid-column: 4 / 5; grid-row: 1 / 3; }
+        .ddt-ni-5 { grid-column: 2 / 3; grid-row: 3 / 5; }
+        .ddt-ni-6 { grid-column: 3 / 5; grid-row: 3 / 4; }
+        .ddt-ni-7 { grid-column: 3 / 4; grid-row: 4 / 6; }
+        .ddt-ni-8 { grid-column: 5 / 6; grid-row: 2 / 4; }
 
         .ddt-hero {
             position: relative;
@@ -3543,6 +4652,192 @@ elif page == "diemden_detail":
             border-radius: 4px;
             box-shadow: 0 14px 30px rgba(15,23,42,0.08);
         }
+                             
+        .ddt-news-section{
+            position: relative;
+            margin-top: 42px;
+            background: #a50000;
+            padding: 48px 0 52px 0;
+            overflow: hidden;
+        }
+
+        .ddt-news-section::before{
+            content:"";
+            position:absolute;
+            width:520px;
+            height:520px;
+            left:50%;
+            top:50%;
+            transform:translate(-50%, -50%);
+            border-radius:50%;
+            border:1px solid rgba(255,255,255,0.08);
+            box-shadow:
+                0 0 0 20px rgba(255,255,255,0.035),
+                0 0 0 42px rgba(255,255,255,0.02);
+            pointer-events:none;
+        }
+
+        .ddt-news-head{
+            position:relative;
+            z-index:2;
+            text-align:center;
+            margin-bottom:22px;
+        }
+
+        .ddt-news-kicker{
+            font-size:15px;
+            font-weight:800;
+            letter-spacing:0.16em;
+            text-transform:uppercase;
+            color:rgba(255,255,255,0.86);
+            margin-bottom:8px;
+        }
+
+        .ddt-news-title{
+            font-size:42px;
+            line-height:1.05;
+            margin:0;
+            color:#ffffff;
+            font-weight:800;
+        }
+
+        #tin-tuc-le-hoi .ddt-wrap{
+            max-width:100%;
+            padding:0;
+        }
+
+        .ddt-news-slider{
+            position:relative;
+            z-index:2;
+            overflow:hidden;
+        }
+
+        .ddt-news-viewport{
+            overflow:hidden;
+            padding:0 24px;
+        }
+
+        .ddt-news-track{
+            display:flex;
+            gap:16px;
+            transition:transform 0.5s ease;
+            will-change:transform;
+        }
+
+        .ddt-news-card{
+            flex:0 0 30%;
+            min-width:0;
+        }
+
+        .ddt-news-image{
+            width:100%;
+            height:260px;
+            background-size:cover;
+            background-position:center;
+            box-shadow:0 18px 36px rgba(0,0,0,0.14);
+        }
+
+        .ddt-news-caption{
+            margin-top:14px;
+            font-size:16px;
+            line-height:1.6;
+            font-weight:700;
+            color:#ffffff;
+            text-align:center;
+        }
+
+        .ddt-news-controls{
+            position:relative;
+            z-index:2;
+            display:flex;
+            justify-content:center;
+            gap:14px;
+            margin-top:18px;
+        }
+        .ddt-news-btn{
+            width:42px;
+            height:42px;
+            border:none;
+            border-radius:50%;
+            background:#ffffff;
+            color:#7c2d12;
+            font-size:20px;
+            font-weight:800;
+            cursor:pointer;
+            box-shadow:0 8px 18px rgba(0,0,0,0.14);
+        }
+
+        .ddt-news-btn:disabled{
+            opacity:0.45;
+            cursor:not-allowed;
+        }
+                             
+        .ddt-activity-section{
+            padding:72px 0 50px 0;
+            background:#f3f3f3;
+        }
+
+        .ddt-activity-head{
+            text-align:center;
+            margin-bottom:34px;
+        }
+
+        .ddt-activity-kicker{
+            font-size:15px;
+            font-weight:800;
+            letter-spacing:0.16em;
+            text-transform:uppercase;
+            color:#334155;
+            margin-bottom:10px;
+        }
+
+        .ddt-activity-title{
+            font-size:56px;
+            line-height:1.05;
+            margin:0;
+            color:#930000;
+            font-weight:800;
+        }
+
+        .ddt-activity-grid{
+            display:grid;
+            grid-template-columns:repeat(3, minmax(0, 1fr));
+            gap:32px 26px;
+        }
+
+        .ddt-activity-card{
+            min-width:0;
+        }
+
+        .ddt-activity-image{
+            width:100%;
+            height:215px;
+            background-size:cover;
+            background-position:center;
+            margin-bottom:14px;
+        }
+
+        .ddt-activity-title-card{
+            font-size:17px;
+            line-height:1.45;
+            font-weight:900;
+            color:#111827;
+            margin-bottom:10px;
+            text-transform:uppercase;
+        }
+
+        .ddt-activity-desc{
+            font-size:15px;
+            line-height:1.7;
+            color:#475569;
+            margin-bottom:10px;
+        }
+
+        .ddt-activity-date{
+            font-size:14px;
+            font-weight:500;
+            color:#64748b;
+        }
 
         @media (max-width: 1100px) {
             .ddt-two-col,
@@ -3566,6 +4861,44 @@ elif page == "diemden_detail":
 
             .ddt-section-title {
                 font-size: 48px;
+            }
+                
+            .ddt-news-title {
+                font-size: 46px;
+            }
+
+            .ddt-news-card {
+                flex: 0 0 44%;
+            }
+
+            .ddt-news-image {
+                height: 230px;
+            }
+                            
+            .ddt-activity-title{
+                font-size:46px;
+            }
+
+            .ddt-activity-grid{
+                grid-template-columns:repeat(2, minmax(0, 1fr));
+            }
+
+            .ddt-activity-image{
+                height:210px;
+            }
+                             
+            .ddt-narration-box {
+                grid-template-columns: 1fr;
+                gap: 22px;
+            }
+
+            .ddt-narration-center {
+                align-items: center;
+                text-align: center;
+            }
+
+            .ddt-team-block {
+                min-height: 260px;
             }
         }
 
@@ -3642,6 +4975,76 @@ elif page == "diemden_detail":
                 grid-row: auto;
                 height: 220px;
             }
+                             
+            .ddt-news-section {
+                padding: 56px 0 64px 0;
+            }
+
+            .ddt-news-title {
+                font-size: 36px;
+            }
+
+            .ddt-news-card {
+                flex: 0 0 86%;
+            }
+
+            .ddt-news-image {
+                height: 190px;
+            }
+
+            .ddt-news-caption {
+                font-size: 15px;
+            }
+                             
+            .ddt-activity-section{
+                padding:56px 0 36px 0;
+            }
+
+            .ddt-activity-title{
+                font-size:36px;
+            }
+
+            .ddt-activity-grid{
+                grid-template-columns:1fr;
+                gap:24px;
+            }
+
+            .ddt-activity-image{
+                height:220px;
+            }
+                             
+            .ddt-narration-box {
+                padding: 20px 16px;
+                border-radius: 20px;
+            }
+
+            .ddt-team-hello {
+                font-size: 34px;
+            }
+
+            .ddt-team-image {
+                max-width: 240px;
+            }
+
+            .ddt-narration-title {
+                font-size: 42px;
+            }
+
+            .ddt-narration-subtitle {
+                font-size: 17px;
+            }
+
+            .ddt-narration-collage {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: none;
+            }
+
+            .ddt-ni-1, .ddt-ni-2, .ddt-ni-3, .ddt-ni-4,
+            .ddt-ni-5, .ddt-ni-6, .ddt-ni-7, .ddt-ni-8 {
+                grid-column: auto;
+                grid-row: auto;
+                min-height: 90px;
+            }
         }
     </style>
 
@@ -3653,6 +5056,36 @@ elif page == "diemden_detail":
             </div>
         </section>
 
+        <section class="ddt-narration-section" id="thuyet-minh">
+            <div class="ddt-wrap">
+                <div class="ddt-narration-box">
+
+                    <div class="ddt-team-block">
+                        <img class="ddt-team-image" src="$team_image_src" alt="Đội thuyết minh" />
+                    </div>
+
+                    <div class="ddt-narration-center">
+                        <div class="ddt-narration-kicker"></div>
+                        <h2 class="ddt-narration-title">Thuyết minh</h2>
+                        <div class="ddt-narration-subtitle">Nghe thuyết minh tại đây</div>
+                        $narration_audio_html
+                    </div>
+
+                    <div class="ddt-narration-collage">
+                        <div class="ddt-narration-item ddt-ni-1" style="background-image:url('$narration_image_1');"></div>
+                        <div class="ddt-narration-item ddt-ni-2" style="background-image:url('$narration_image_2');"></div>
+                        <div class="ddt-narration-item ddt-ni-3" style="background-image:url('$narration_image_3');"></div>
+                        <div class="ddt-narration-item ddt-ni-4" style="background-image:url('$narration_image_4');"></div>
+                        <div class="ddt-narration-item ddt-ni-5" style="background-image:url('$narration_image_5');"></div>
+                        <div class="ddt-narration-item ddt-ni-6" style="background-image:url('$narration_image_6');"></div>
+                        <div class="ddt-narration-item ddt-ni-7" style="background-image:url('$narration_image_7');"></div>
+                        <div class="ddt-narration-item ddt-ni-8" style="background-image:url('$narration_image_8');"></div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+                             
         <section class="ddt-section" id="gioi-thieu">
             <div class="ddt-wrap">
                 <div class="ddt-two-col">
@@ -3780,24 +5213,93 @@ elif page == "diemden_detail":
                 </div>
             </div>
         </section>
-                             
-        <section class="ddt-section" id="quan-the-di-tich-cuoi">
+                        
+        <section class="ddt-news-section" id="tin-tuc-le-hoi">
             <div class="ddt-wrap">
-                <div class="ddt-two-col">
-                    <div class="ddt-mosaic-left">
-                        <div class="img-a" style="background-image:url('$standout_image_1');"></div>
-                        <div class="img-b" style="background-image:url('$standout_image_2');"></div>
-                        <div class="img-c" style="background-image:url('$standout_image_3');"></div>
-                        <div class="img-d" style="background-image:url('$standout_image_4');"></div>
+                <div class="ddt-news-head">
+                    <div class="ddt-news-kicker">Thông tin</div>
+                    <h2 class="ddt-news-title ddt-script">Tin tức lễ hội</h2>
+                </div>
+
+                <div class="ddt-news-slider">
+                    <div class="ddt-news-viewport">
+                        <div class="ddt-news-track" id="ddtNewsTrack">
+                            $news_cards_html
+                        </div>
                     </div>
 
-                    <div>
-                        <div class="ddt-section-kicker">Tham quan</div>
-                        <h2 class="ddt-section-title ddt-script">Quần thể di tích</h2>
-
-                        <div class="ddt-text">$standout_text</div>
-                        <div class="ddt-text">$visit_text</div>
+                    <div class="ddt-news-controls">
+                        <button class="ddt-news-btn" id="ddtNewsPrev">‹</button>
+                        <button class="ddt-news-btn" id="ddtNewsNext">›</button>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <script>
+        (function () {
+            const track = document.getElementById("ddtNewsTrack");
+            const prevBtn = document.getElementById("ddtNewsPrev");
+            const nextBtn = document.getElementById("ddtNewsNext");
+
+            if (!track || !prevBtn || !nextBtn) return;
+
+            let currentIndex = 0;
+
+            function getVisibleCount() {
+                if (window.innerWidth <= 768) return 1;
+                if (window.innerWidth <= 1100) return 2;
+                return 3;
+            }
+
+            function updateSlider() {
+                const cards = track.querySelectorAll(".ddt-news-card");
+                if (!cards.length) return;
+
+                const gap = 18;
+                const cardWidth = cards[0].offsetWidth + gap;
+                const maxIndex = Math.max(0, cards.length - getVisibleCount());
+
+                if (currentIndex > maxIndex) currentIndex = maxIndex;
+
+                const peekOffset = 110;
+                track.style.transform = 'translateX(-' + ((currentIndex * cardWidth) + peekOffset) + 'px)';
+                prevBtn.disabled = currentIndex === 0;
+                nextBtn.disabled = currentIndex >= maxIndex;
+            }
+
+            prevBtn.addEventListener("click", function () {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    updateSlider();
+                }
+            });
+
+            nextBtn.addEventListener("click", function () {
+                const cards = track.querySelectorAll(".ddt-news-card");
+                const maxIndex = Math.max(0, cards.length - getVisibleCount());
+                if (currentIndex < maxIndex) {
+                    currentIndex++;
+                    updateSlider();
+                }
+            });
+
+            window.addEventListener("resize", updateSlider);
+            setTimeout(updateSlider, 120);
+        })();
+        </script>
+
+        </div>
+                             
+        <section class="ddt-activity-section" id="tin-tuc-hoat-dong">
+            <div class="ddt-wrap">
+                <div class="ddt-activity-head">
+                    <div class="ddt-activity-kicker">Thông tin</div>
+                    <h2 class="ddt-activity-title ddt-script">Tin tức hoạt động</h2>
+                </div>
+
+                <div class="ddt-activity-grid">
+                    $activity_cards_html
                 </div>
             </div>
         </section>
@@ -3832,7 +5334,20 @@ elif page == "diemden_detail":
         standout_image_4=standout_image_4,
         standout_text=escape(standout_text),
         visit_text=escape(visit_text),
-        best_time=best_time
+        best_time=best_time,
+        news_cards_html=news_cards_html,
+        activity_cards_html=activity_cards_html,
+
+        team_image_src=team_image_src,
+        narration_audio_html=narration_audio_html,
+        narration_image_1=narration_image_1,
+        narration_image_2=narration_image_2,
+        narration_image_3=narration_image_3,
+        narration_image_4=narration_image_4,
+        narration_image_5=narration_image_5,
+        narration_image_6=narration_image_6,
+        narration_image_7=narration_image_7,
+        narration_image_8=narration_image_8,
     )
 
     components.html(html_output, height=page_height, scrolling=False)
