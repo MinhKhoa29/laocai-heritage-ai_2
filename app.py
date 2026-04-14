@@ -40,7 +40,7 @@ def image_to_data_uri(candidates):
 
 st.set_page_config(
     page_title="LAO CAI HERITAGE AI",
-    page_icon="🏔️",
+    page_icon="assets/anime_teamtrangchu1.png",
     layout="wide"
 )
 
@@ -435,75 +435,88 @@ YÊU CẦU:
 
         return f"Lỗi Gemini Search: {error_text}"
 
+hero_home_src = image_to_data_uri([
+    "kho_anh/chinh.png",
+    "kho_anh/chinh.jpg",
+    "kho_anh/chinh.jpeg",
+    "kho_anh/chinh.webp"
+])
+
 # CSS trang chủ
-st.markdown("""
+st.markdown(f"""
 <style>
 /* Ẩn menu mặc định streamlit cho giống web thật hơn */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
+#MainMenu {{visibility: hidden;}}
+footer {{visibility: hidden;}}
+header {{visibility: hidden;}}
 
 /* Toàn bộ nền */
-.stApp {
+.stApp {{
     background-color: #f6f6f6;
-}
+}}
 
 /* Giảm padding mặc định */
-.block-container {
+.block-container {{
     padding-top: 0rem;
     padding-left: 0rem;
     padding-right: 0rem;
     max-width: 100%;
-}
-
-/* Topbar */
-.topbar {
-    background: #eaf4ff;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 60px;
-    font-size: 15px;
-    color: #0d2b4d;
-    border-bottom: 1px solid #dbe7f3;
-}
+}}
 
 /* Navbar */
-.navbar {
-    background: white;
+.navbar {{
+    background: rgba(255,255,255,0.98);
     height: 72px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 60px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-    position: sticky;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    position: fixed;
     top: 0;
-    z-index: 999;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 99999;
     box-sizing: border-box;
-}
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}}
 
-.logo {
+.logo {{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+}}
+
+.logo img {{
+    height: 71px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+}}
+
+.logo-text {{
     font-size: 34px;
     font-weight: 800;
     color: #1565c0;
-    text-decoration: none;
-    white-space: nowrap;
-}
+    line-height: 1;
+}}
 
-.logo span {
+.logo-text span {{
     color: #2e7d32;
-}
+}}
 
-.nav-links {
+.nav-links {{
     display: flex;
     gap: 34px;
     align-items: center;
     flex-wrap: wrap;
-}
+}}
 
-.nav-links a {
+.nav-links a {{
     font-size: 18px;
     font-weight: 600;
     color: #222;
@@ -511,17 +524,17 @@ header {visibility: hidden;}
     position: relative;
     padding: 6px 0;
     transition: color 0.25s ease;
-}
+}}
 
-.nav-links a:hover {
+.nav-links a:hover {{
     color: #1565c0;
-}
+}}
 
-.nav-links a.active {
+.nav-links a.active {{
     color: #1565c0;
-}
+}}
 
-.nav-links a.active::after {
+.nav-links a.active::after {{
     content: "";
     position: absolute;
     left: 0;
@@ -530,275 +543,297 @@ header {visibility: hidden;}
     height: 3px;
     border-radius: 999px;
     background: #1565c0;
-}
+}}
 
 /* Hero */
-.hero {
+.hero {{
     position: relative;
-    height: 520px;
-    background-image: linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.18)),
-                      url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop');
+    min-height: 100vh;
+    background-image: linear-gradient(rgba(0,0,0,0.28), rgba(0,0,0,0.28)),
+                      url('{hero_home_src}');
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
     display: flex;
     align-items: center;
     padding: 0 80px;
-}
+    box-sizing: border-box;
+    overflow: hidden;
+}}
 
-.hero-content {
+.hero-content {{
     color: white;
-    max-width: 700px;
-}
+    max-width: 760px;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+}}
 
-.hero-title {
+.hero-title {{
     font-size: 54px;
     font-weight: 800;
     line-height: 1.15;
     margin-bottom: 16px;
-}
+}}
 
-.hero-subtitle {
+.hero-subtitle {{
     font-size: 22px;
     line-height: 1.6;
     opacity: 0.96;
-}       
+}}
 
-.search-wrapper {
-    position: relative;
-    margin-top: -78px;
-    z-index: 50;
-    display: flex;
-    justify-content: center;
-}
+@media (max-width: 768px) {{
+    .hero {{
+        min-height: calc(100vh - 72px);
+        padding: 0 24px;
+    }}
 
-.search-box {
-    width: 86%;
-    background: #ffffff;
-    border-radius: 22px;
-    box-shadow: 0 14px 34px rgba(0,0,0,0.16);
-    padding: 14px 18px;
-    box-sizing: border-box;
-    border: 1px solid rgba(0,0,0,0.05);
-}
+    .hero-title {{
+        font-size: 42px;
+        line-height: 1.15;
+    }}
 
-.search-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 130px;
-    gap: 14px;
-    align-items: center;
-}
+    .hero-subtitle {{
+        font-size: 18px;
+        line-height: 1.65;
+    }}
+}}
 
-.search-item {
-    background: #f8f9fb;
-    border: 1px solid #dbe3ee;
-    border-radius: 14px;
-    padding: 10px 14px;
-    min-height: 64px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.search-label {
-    font-size: 13px;
-    color: #6b7280;
-    margin-bottom: 6px;
-    font-weight: 500;
-}
-
-.search-fake-input {
-    background: #ffffff;
-    border-radius: 10px;
-    min-height: 38px;
-    padding: 9px 12px;
-    font-size: 16px;
-    color: #111827;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-sizing: border-box;
-}
-
-.search-placeholder {
-    color: #9ca3af;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.search-button {
-    min-height: 64px;
-    border-radius: 14px;
-    background: #1565c0;
+.hero-content {{
     color: white;
-    font-size: 18px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 20px rgba(21,101,192,0.22);
-}
+    max-width: 700px;
+    animation: heroFadeUp 1s ease-out forwards;
+}}
 
-@media (max-width: 992px) {
-    .search-wrapper {
+.hero-title {{
+    font-size: 54px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    opacity: 0;
+    transform: translateY(28px);
+    animation: heroTextUp 1s ease-out forwards;
+}}
+
+.hero-subtitle {{
+    font-size: 22px;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: heroTextUp 1s ease-out 0.35s forwards;
+}}
+
+@keyframes heroZoom {{
+    from {{
+        background-size: 100%;
+    }}
+    to {{
+        background-size: 108%;
+    }}
+}}
+
+@keyframes heroTextUp {{
+    from {{
+        opacity: 0;
+        transform: translateY(28px);
+    }}
+    to {{
+        opacity: 1;
+        transform: translateY(0);
+    }}
+}}
+
+@keyframes heroFadeUp {{
+    from {{
+        opacity: 0.2;
+    }}
+    to {{
+        opacity: 1;
+    }}
+}}
+
+.hero-content {{
+    color: white;
+    max-width: 700px;
+}}
+
+.hero-title {{
+    font-size: 54px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 16px;
+}}
+
+.hero-subtitle {{
+    font-size: 22px;
+    line-height: 1.6;
+    opacity: 0.96;
+}}       
+
+@media (max-width: 992px) {{
+    .search-wrapper {{
         margin-top: -52px;
-    }
+    }}
 
-    .search-box {
+    .search-box {{
         width: 92%;
-    }
+    }}
 
-    .search-row {
+    .search-row {{
         grid-template-columns: 1fr 1fr;
-    }
-}
+    }}
+}}
 
-@media (max-width: 640px) {
-    .search-wrapper {
+@media (max-width: 640px) {{
+    .search-wrapper {{
         margin-top: -36px;
-    }
+    }}
 
-    .search-box {
+    .search-box {{
         width: 94%;
         padding: 14px;
-    }
+    }}
 
-    .search-row {
+    .search-row {{
         grid-template-columns: 1fr;
-    }
-}            
+    }}
+}}            
 
-.search-float {
+.search-float {{
     position: relative;
     margin-top: -95px;  
     margin-bottom: -20px;
     z-index: 50;
-}         
+}}         
 
 /* Danh mục nhanh */
-.section {
+.section {{
     padding: 46px 70px 10px 70px;
-}
+}}
 
-.quick-grid {
+.quick-grid {{
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 24px;
     margin-top: 20px;
-}
+}}
 
-.quick-card {
+.quick-card {{
     background: white;
     border-radius: 20px;
     padding: 26px 16px;
     text-align: center;
     box-shadow: 0 6px 18px rgba(0,0,0,0.06);
     transition: 0.2s;
-}
+}}
 
-.quick-card:hover {
+.quick-card:hover {{
     transform: translateY(-4px);
-}
+}}
 
-.quick-icon {
+.quick-icon {{
     font-size: 34px;
     margin-bottom: 10px;
-}
+}}
 
-.quick-title {
+.quick-title {{
     font-size: 18px;
     font-weight: 700;
     color: #1f2937;
-}
+}}
 
 /* Tiêu đề section */
-.section-title {
+.section-title {{
     font-size: 34px;
     font-weight: 800;
     color: #111827;
     margin-bottom: 8px;
-}
+}}
 
-.section-subtitle {
+.section-subtitle {{
     font-size: 18px;
     color: #6b7280;
-}
+}}
 
 /* Card địa điểm */
-.place-grid {
+.place-grid {{
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 26px;
     margin-top: 28px;
     margin-bottom: 60px;
-}
+}}
 
-.place-card {
+.place-card {{
     background: white;
     border-radius: 22px;
     overflow: hidden;
     box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-}
+}}
 
-.place-image {
+.place-image {{
     height: 220px;
     background-size: cover;
     background-position: center;
-}
+}}
 
-.place-body {
+.place-body {{
     padding: 18px;
-}
+}}
 
-.place-name {
+.place-name {{
     font-size: 22px;
     font-weight: 800;
     color: #111827;
     margin-bottom: 10px;
-}
+}}
 
-.place-desc {
+.place-desc {{
     color: #4b5563;
     line-height: 1.6;
     font-size: 16px;
-}
+}}
 
 /* Footer */
-.footer {
+.footer {{
     background: #dfeefc;
     padding: 40px 70px;
     margin-top: 30px;
-}
+}}
 
-.footer-title {
+.footer-title {{
     font-size: 24px;
     font-weight: 800;
     margin-bottom: 14px;
     color: #0d2b4d;
-}
+}}
 
-.footer-text {
+.footer-text {{
     font-size: 17px;
     color: #334155;
     line-height: 1.8;
-}
+}}
 </style>
 """, unsafe_allow_html=True)
 
-# Topbar
-topbar_html = dedent("""
-<div class="topbar">
-    <div>📞 0346 538 917 — Trợ lý du lịch Lào Cai</div>
-    <div>🌏 Văn hóa • Lịch sử • Danh lam thắng cảnh</div>
-</div>
-""")
-st.markdown(topbar_html, unsafe_allow_html=True)
+navbar_logo_src = image_to_data_uri([
+    "assets/anime_teamtrangchu1.png",
+    "anime_teamtrangchu1.png",
+    "assets/anime_teamtrangchu1.jpg",
+    "anime_teamtrangchu1.jpg",
+    "assets/anime_teamtrangchu1.jpeg",
+    "anime_teamtrangchu1.jpeg",
+    "assets/anime_teamtrangchu1.webp",
+    "anime_teamtrangchu1.webp"
+])
 
 # Topbar
 navbar_html = dedent(f"""
 <div class="navbar">
-    <a class="logo" href="?page=home" target="_self">Lao Cai <span>Heritage AI</span></a>
+    <a class="logo" href="?page=home" target="_self">
+        <img src="{navbar_logo_src}" alt="Logo">
+        <span class="logo-text">Lao Cai <span>Heritage AI</span></span>
+    </a>
     <div class="nav-links">
         <a href="?page=home" target="_self" class="{'active' if page == 'home' else ''}">Trang chủ</a>
         <a href="?page=diemden" target="_self" class="{'active' if page in ['diemden', 'diemden_detail'] else ''}">Điểm đến</a>
@@ -809,6 +844,13 @@ navbar_html = dedent(f"""
 </div>
 """)
 st.markdown(navbar_html, unsafe_allow_html=True)
+
+hero_home_src = image_to_data_uri([
+    "kho_anh/trang_chu/chinh.png",
+    "kho_anh/trang_chu/chinh.jpg",
+    "kho_anh/trang_chu/chinh.jpeg",
+    "kho_anh/trang_chu/chinh.webp"
+])
 
 if page == "home":
     # Hero
@@ -823,222 +865,111 @@ if page == "home":
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-    # Search box nổi
-    st.markdown('<div class="search-float">', unsafe_allow_html=True)
-    components.html("""
-    <style>
-    .search-wrapper {
-        position: relative;
-        margin-top: 30px;
-        z-index: 10;
-        display: flex;
-        justify-content: center;
-        padding: 0 0 10px 0;
-    }
-
-    .search-box {
-        width: 82%;
-        background: white;
-        border-radius: 22px;
-        box-shadow: 0 12px 28px rgba(0,0,0,0.14);
-        padding: 22px 26px;
-        box-sizing: border-box;
-    }
-
-    .search-row {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 140px;
-        gap: 16px;
-        align-items: stretch;
-    }
-
-    .search-item {
-        background: #f8f9fb;
-        border-radius: 14px;
-        padding: 12px 16px;
-        border: 1px solid #e2e7ef;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        box-sizing: border-box;
-    }
-
-    .search-label {
-        font-size: 13px;
-        color: #6b7280;
-        margin-bottom: 6px;
-        font-weight: 500;
-    }
-
-    .search-input,
-    .search-select {
-        width: 100%;
-        border: none;
-        outline: none;
-        background: white;
-        font-size: 16px;
-        font-weight: 500;
-        color: #111827;
-        padding: 8px 10px;
-        border-radius: 8px;
-        box-sizing: border-box;
-    }
-
-    .search-input::placeholder {
-        color: #9ca3af;
-    }
-
-    .search-input:focus,
-    .search-select:focus {
-        outline: 1px solid #1565c0;
-    }
-
-    .search-button {
-        background: #1565c0;
-        color: white;
-        border-radius: 14px;
-        font-size: 18px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        min-height: 100%;
-        transition: 0.25s ease;
-    }
-
-    .search-button:hover {
-        background: #0f4f9a;
-    }
-
-    @media (max-width: 992px) {
-        .search-row {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .search-button {
-            min-height: 56px;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .search-box {
-            width: 92%;
-            padding: 18px;
-        }
-
-        .search-row {
-            grid-template-columns: 1fr;
-        }
-    }
-    </style>
-
-    <div class="search-wrapper">
-        <div class="search-box">
-            <div class="search-row">
-
-                <div class="search-item">
-                    <div class="search-label">Bạn muốn khám phá gì?</div>
-                    <input class="search-input" type="text" placeholder="Đền Thượng, Fansipan, Đền Bảo Hà..." />
-                </div>
-
-                <div class="search-item">
-                    <div class="search-label">Loại hình</div>
-                    <select class="search-select">
-                        <option>Tâm linh</option>
-                        <option>Check-in</option>
-                        <option>Sinh thái</option>
-                        <option>Văn hóa</option>
-                    </select>
-                </div>
-
-                <div class="search-item">
-                    <div class="search-label">Thời gian</div>
-                    <select class="search-select">
-                        <option>1 ngày</option>
-                        <option>2 ngày</option>
-                        <option>3 ngày</option>
-                    </select>
-                </div>
-
-                <div class="search-button">Tìm kiếm</div>
-
-            </div>
-        </div>
-    </div>
-    """, height=170, scrolling=False)
-    st.markdown('</div>', unsafe_allow_html=True)
     
+    kham_pha_1 = image_to_data_uri([
+        "kho_anh/trang_chu/kham_pha/1.png",
+        "kho_anh/trang_chu/kham_pha/1.jpg",
+        "kho_anh/trang_chu/kham_pha/1.jpeg",
+        "kho_anh/trang_chu/kham_pha/1.webp"
+    ])
+
+    kham_pha_2 = image_to_data_uri([
+        "kho_anh/trang_chu/kham_pha/2.png",
+        "kho_anh/trang_chu/kham_pha/2.jpg",
+        "kho_anh/trang_chu/kham_pha/2.jpeg",
+        "kho_anh/trang_chu/kham_pha/2.webp"
+    ])
+
+    kham_pha_3 = image_to_data_uri([
+        "kho_anh/trang_chu/kham_pha/3.png",
+        "kho_anh/trang_chu/kham_pha/3.jpg",
+        "kho_anh/trang_chu/kham_pha/3.jpeg",
+        "kho_anh/trang_chu/kham_pha/3.webp"
+    ])
+
+    kham_pha_4 = image_to_data_uri([
+        "kho_anh/trang_chu/kham_pha/4.png",
+        "kho_anh/trang_chu/kham_pha/4.jpg",
+        "kho_anh/trang_chu/kham_pha/4.jpeg",
+        "kho_anh/trang_chu/kham_pha/4.webp"
+    ])
+
+    kham_pha_5 = image_to_data_uri([
+        "kho_anh/trang_chu/kham_pha/5.png",
+        "kho_anh/trang_chu/kham_pha/5.jpg",
+        "kho_anh/trang_chu/kham_pha/5.jpeg",
+        "kho_anh/trang_chu/kham_pha/5.webp"
+    ])
+
     # Khám phá nhanh
-    components.html("""
+    components.html(f"""
     <style>
-    body {
+    body {{
         margin: 0;
         font-family: Arial, sans-serif;
-    }
+    }}
 
-    .product-section {
+    .product-section {{
         padding: 30px 0 20px 0;
         width: 100%;
         box-sizing: border-box;
         overflow: hidden;
-    }
+    }}
 
-    .product-container {
+    .product-container {{
         width: 100%;
         max-width: 1280px;
         margin: 0 auto;
         padding: 0 24px;
         box-sizing: border-box;
-    }
+    }}
 
-    .product-header {
+    .product-header {{
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         gap: 24px;
         margin-bottom: 28px;
-    }
+    }}
 
-    .product-header-left {
+    .product-header-left {{
         flex: 1;
         min-width: 0;
-    }
+    }}
 
-    .product-title {
-        font-size: 28px;
+    .product-title {{
+        font-size: 35px;
         font-weight: 800;
         color: #1565c0;
         text-transform: uppercase;
         line-height: 1.3;
         margin-bottom: 8px;
-    }
+    }}
 
-    .product-line {
+    .product-line {{
         width: 145px;
         height: 4px;
         background: #1565c0;
         border-radius: 999px;
         margin-bottom: 18px;
-    }
+    }}
 
-    .product-desc {
-        max-width: 760px;
+    .product-desc {{
+        max-width: 940px;
         font-size: 18px;
         line-height: 1.8;
         color: #1f2937;
-    }
+    }}
 
-    .arrow-box {
+    .arrow-box {{
         display: flex;
         gap: 14px;
         align-items: center;
         flex-shrink: 0;
         margin-top: 10px;
-    }
+    }}
 
-    .arrow-btn {
+    .arrow-btn {{
         width: 50px;
         height: 50px;
         border: none;
@@ -1049,39 +980,39 @@ if page == "home":
         cursor: pointer;
         box-shadow: 0 6px 18px rgba(0,0,0,0.10);
         transition: all 0.25s ease;
-    }
+    }}
 
-    .arrow-btn:hover {
+    .arrow-btn:hover {{
         transform: translateY(-2px);
         color: #1565c0;
         box-shadow: 0 10px 22px rgba(0,0,0,0.14);
-    }
+    }}
 
-    .arrow-btn:disabled {
+    .arrow-btn:disabled {{
         opacity: 0.45;
         cursor: not-allowed;
         transform: none;
-    }
+    }}
 
     /* khung ngoài */
-    .carousel-wrap {
+    .carousel-wrap {{
         width: 100%;
         overflow: hidden;
         position: relative;
         padding-right: 90px; /* chừa chỗ để lộ card sau */
         box-sizing: border-box;
-    }
+    }}
 
     /* thanh trượt */
-    .carousel-track {
+    .carousel-track {{
         display: flex;
         gap: 18px;
         transition: transform 0.6s ease;
         will-change: transform;
-    }
+    }}
 
     /* mỗi card */
-    .product-card {
+    .product-card {{
         position: relative;
         flex: 0 0 calc((100% - 36px) / 3); /* 3 card chính */
         height: 300px;
@@ -1090,16 +1021,16 @@ if page == "home":
         background-size: cover;
         background-position: center;
         box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-    }
+    }}
 
-    .product-card::after {
+    .product-card::after {{
         content: "";
         position: absolute;
         inset: 0;
         background: linear-gradient(to top, rgba(0,0,0,0.62), rgba(0,0,0,0.08));
-    }
+    }}
 
-    .product-text {
+    .product-text {{
         position: absolute;
         left: 18px;
         right: 18px;
@@ -1111,65 +1042,65 @@ if page == "home":
         text-transform: uppercase;
         line-height: 1.5;
         text-shadow: 0 2px 8px rgba(0,0,0,0.35);
-    }
+        text-align: center;
+    }}
 
-    @media (max-width: 992px) {
-        .product-header {
+    @media (max-width: 992px) {{
+        .product-header {{
             flex-direction: column;
             align-items: flex-start;
-        }
+        }}
 
-        .carousel-wrap {
+        .carousel-wrap {{
             padding-right: 40px;
-        }
+        }}
 
-        .product-card {
+        .product-card {{
             flex: 0 0 calc((100% - 18px) / 2);
             height: 270px;
-        }
-    }
+        }}
+    }}
 
-    @media (max-width: 768px) {
-        .product-container {
+    @media (max-width: 768px) {{
+        .product-container {{
             padding: 0 16px;
-        }
+        }}
 
-        .product-title {
+        .product-title {{
             font-size: 24px;
-        }
+        }}
 
-        .product-desc {
+        .product-desc {{
             font-size: 16px;
             line-height: 1.7;
-        }
+        }}
 
-        .carousel-wrap {
+        .carousel-wrap {{
             padding-right: 0;
-        }
+        }}
 
-        .product-card {
+        .product-card {{
             flex: 0 0 100%;
             height: 250px;
-        }
+        }}
 
-        .arrow-btn {
+        .arrow-btn {{
             width: 46px;
             height: 46px;
             font-size: 22px;
-        }
-    }
+        }}
+    }}
     </style>
 
     <div class="product-section">
         <div class="product-container">
             <div class="product-header">
                 <div class="product-header-left">
-                    <div class="product-title">Khám phá sản phẩm Vietravel</div>
+                    <div class="product-title">KHÁM PHÁ LAO CAI HERITAGE AI</div>
                     <div class="product-line"></div>
                     <div class="product-desc">
-                        Hãy tận hưởng trải nghiệm du lịch chuyên nghiệp, mang lại cho bạn những khoảnh khắc tuyệt vời
-                        và nâng tầm cuộc sống. Chúng tôi cam kết mang đến những chuyến đi đáng nhớ, giúp bạn khám phá
-                        thế giới theo cách hoàn hảo nhất.
+                        Nền tảng ứng dụng trí tuệ nhân tạo giúp giới thiệu các địa danh, văn hóa, lịch sử và du lịch Lào Cai một cách trực quan, hiện đại và dễ tiếp cận.
+                        Mang đến trải nghiệm khám phá thông minh, hỗ trợ tra cứu thông tin, gợi ý hành trình và kết nối người dùng với vẻ đẹp của quê hương Lào Cai.
                     </div>
                 </div>
 
@@ -1187,26 +1118,26 @@ if page == "home":
 
     <script>
     const productData = [
-        {
-            image: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1200&auto=format&fit=crop",
-            text: "Kỳ nghỉ mùa xuân châu Âu cùng gia đình"
-        },
-        {
-            image: "https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=1200&auto=format&fit=crop",
-            text: "Hòa cùng sắc hoa anh đào khắp thế giới"
-        },
-        {
-            image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop",
-            text: "Tour lễ 30/4 giá tốt cho gia đình"
-        },
-        {
-            image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
-            text: "Tự hào nét Việt - ưu đãi kích cầu du lịch nội địa"
-        },
-        {
-            image: "https://images.unsplash.com/photo-1506929562872-bb421503ef21?q=80&w=1200&auto=format&fit=crop",
-            text: "Tour mới - hành trình độc đáo"
-        }
+        {{
+            image: "{kham_pha_1}",
+            text: "TIỀM NĂNG, ĐỊNH HƯỚNG PHÁT TRIỂN"
+        }},
+        {{
+            image: "{kham_pha_2}",
+            text: "Sun World Fansipan Legend"
+        }},
+        {{
+            image: "{kham_pha_3}",
+            text: "đua ngựa bắc hà"
+        }},
+        {{
+            image: "{kham_pha_4}",
+            text: "nhà thờ đá sapa"
+        }},
+        {{
+            image: "{kham_pha_5}",
+            text: "tâm linh - đền chiềng ken"
+        }}
     ];
 
     const track = document.getElementById("carouselTrack");
@@ -1215,48 +1146,48 @@ if page == "home":
 
     let currentIndex = 0;
 
-    function buildCards() {
+    function buildCards() {{
         track.innerHTML = "";
-        productData.forEach(item => {
+        productData.forEach(item => {{
             const card = document.createElement("div");
             card.className = "product-card";
-            card.style.backgroundImage = `url('${item.image}')`;
-            card.innerHTML = `<div class="product-text">${item.text}</div>`;
+            card.style.backgroundImage = `url('${{item.image}}')`;
+            card.innerHTML = `<div class="product-text">${{item.text}}</div>`;
             track.appendChild(card);
-        });
-    }
+        }});
+    }}
 
-    function getVisibleCount() {
+    function getVisibleCount() {{
         if (window.innerWidth <= 768) return 1;
         if (window.innerWidth <= 992) return 2;
         return 3;
-    }
+    }}
 
-    function updateCarousel() {
+    function updateCarousel() {{
         const cards = track.querySelectorAll(".product-card");
         if (!cards.length) return;
 
         const gap = 18;
         const cardWidth = cards[0].offsetWidth + gap;
-        track.style.transform = `translateX(-${currentIndex * cardWidth}px)`;
+        track.style.transform = `translateX(-${{currentIndex * cardWidth}}px)`;
 
         prevBtn.disabled = currentIndex === 0;
         nextBtn.disabled = currentIndex >= productData.length - getVisibleCount();
-    }
+    }}
 
-    prevBtn.addEventListener("click", () => {
-        if (currentIndex > 0) {
+    prevBtn.addEventListener("click", () => {{
+        if (currentIndex > 0) {{
             currentIndex--;
             updateCarousel();
-        }
-    });
+        }}
+    }});
 
-    nextBtn.addEventListener("click", () => {
-        if (currentIndex < productData.length - getVisibleCount()) {
+    nextBtn.addEventListener("click", () => {{
+        if (currentIndex < productData.length - getVisibleCount()) {{
             currentIndex++;
             updateCarousel();
-        }
-    });
+        }}
+    }});
 
     window.addEventListener("resize", updateCarousel);
 
@@ -1264,64 +1195,256 @@ if page == "home":
     setTimeout(updateCarousel, 100);
     </script>
     """, height=540)
-                    
+
+    # Miền Bắc
+    nb_quangninh = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/quangninh.png",
+        "kho_anh/trang_chu/noi_bat/bac/quangninh.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/quangninh.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/quangninh.webp"
+    ])
+
+    nb_hagiang = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/hagiang.png",
+        "kho_anh/trang_chu/noi_bat/bac/hagiang.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/hagiang.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/hagiang.webp"
+    ])
+
+    nb_laocai = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/laocai.png",
+        "kho_anh/trang_chu/noi_bat/bac/laocai.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/laocai.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/laocai.webp"
+    ])
+
+    nb_ninhbinh = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/ninhbinh.png",
+        "kho_anh/trang_chu/noi_bat/bac/ninhbinh.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/ninhbinh.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/ninhbinh.webp"
+    ])
+
+    nb_yenbai = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/yenbai.png",
+        "kho_anh/trang_chu/noi_bat/bac/yenbai.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/yenbai.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/yenbai.webp"
+    ])
+
+    nb_sonla = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/sonla.png",
+        "kho_anh/trang_chu/noi_bat/bac/sonla.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/sonla.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/sonla.webp"
+    ])
+
+    nb_caobang = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/caobang.png",
+        "kho_anh/trang_chu/noi_bat/bac/caobang.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/caobang.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/caobang.webp"
+    ])
+
+    nb_haiphong = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/haiphong.png",
+        "kho_anh/trang_chu/noi_bat/bac/haiphong.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/haiphong.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/haiphong.webp"
+    ])
+
+    nb_hanoi = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/bac/hanoi.png",
+        "kho_anh/trang_chu/noi_bat/bac/hanoi.jpg",
+        "kho_anh/trang_chu/noi_bat/bac/hanoi.jpeg",
+        "kho_anh/trang_chu/noi_bat/bac/hanoi.webp"
+    ])
+
+    # Miền Trung
+    nt_hue = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/hue.png",
+        "kho_anh/trang_chu/noi_bat/trung/hue.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/hue.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/hue.webp"
+    ])
+
+    nt_danang = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/danang.png",
+        "kho_anh/trang_chu/noi_bat/trung/danang.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/danang.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/danang.webp"
+    ])
+
+    nt_quangnam = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/quangnam.png",
+        "kho_anh/trang_chu/noi_bat/trung/quangnam.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/quangnam.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/quangnam.webp"
+    ])
+
+    nt_nhatrang = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/nhatrang.png",
+        "kho_anh/trang_chu/noi_bat/trung/nhatrang.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/nhatrang.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/nhatrang.webp"
+    ])
+
+    nt_phuyen = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/phuyen.png",
+        "kho_anh/trang_chu/noi_bat/trung/phuyen.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/phuyen.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/phuyen.webp"
+    ])
+
+    nt_binhdinh = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/binhdinh.png",
+        "kho_anh/trang_chu/noi_bat/trung/binhdinh.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/binhdinh.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/binhdinh.webp"
+    ])
+
+    nt_quangbinh = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/quangbinh.png",
+        "kho_anh/trang_chu/noi_bat/trung/quangbinh.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/quangbinh.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/quangbinh.webp"
+    ])
+
+    nt_thanhhoa = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/thanhhoa.png",
+        "kho_anh/trang_chu/noi_bat/trung/thanhhoa.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/thanhhoa.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/thanhhoa.webp"
+    ])
+
+    nt_nghean = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/trung/nghean.png",
+        "kho_anh/trang_chu/noi_bat/trung/nghean.jpg",
+        "kho_anh/trang_chu/noi_bat/trung/nghean.jpeg",
+        "kho_anh/trang_chu/noi_bat/trung/nghean.webp"
+    ])
+
+    # Miền Nam
+    nn_hochiminh = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/hochiminh.png",
+        "kho_anh/trang_chu/noi_bat/nam/hochiminh.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/hochiminh.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/hochiminh.webp"
+    ])
+
+    nn_kiengiang = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/kiengiang.png",
+        "kho_anh/trang_chu/noi_bat/nam/kiengiang.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/kiengiang.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/kiengiang.webp"
+    ])
+
+    nn_lamdong = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/lamdong.png",
+        "kho_anh/trang_chu/noi_bat/nam/lamdong.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/lamdong.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/lamdong.webp"
+    ])
+
+    nn_vungtau = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/vungtau.png",
+        "kho_anh/trang_chu/noi_bat/nam/vungtau.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/vungtau.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/vungtau.webp"
+    ])
+
+    nn_cantho = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/cantho.png",
+        "kho_anh/trang_chu/noi_bat/nam/cantho.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/cantho.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/cantho.webp"
+    ])
+
+    nn_angiang = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/angiang.png",
+        "kho_anh/trang_chu/noi_bat/nam/angiang.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/angiang.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/angiang.webp"
+    ])
+
+    nn_tiengiang = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/tiengiang.png",
+        "kho_anh/trang_chu/noi_bat/nam/tiengiang.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/tiengiang.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/tiengiang.webp"
+    ])
+
+    nn_bentre = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/bentre.png",
+        "kho_anh/trang_chu/noi_bat/nam/bentre.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/bentre.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/bentre.webp"
+    ])
+
+    nn_dongthap = image_to_data_uri([
+        "kho_anh/trang_chu/noi_bat/nam/dongthap.png",
+        "kho_anh/trang_chu/noi_bat/nam/dongthap.jpg",
+        "kho_anh/trang_chu/noi_bat/nam/dongthap.jpeg",
+        "kho_anh/trang_chu/noi_bat/nam/dongthap.webp"
+    ])
+
     # Điểm đến yêu thích
-    components.html(dedent("""
+    components.html(dedent(f"""
     <style>
-    body {
+    body {{
         margin: 0;
         font-family: Arial, sans-serif;
-    }
+    }}
 
-    .favorite-section {
+    .favorite-section {{
         width: 100%;
         padding: 24px 0;
         box-sizing: border-box;
-    }
+    }}
 
-    .favorite-container {
+    .favorite-container {{
         max-width: 1350px;
         margin: 0 auto;
         padding: 0 18px;
         box-sizing: border-box;
-    }
+    }}
 
-    .favorite-title {
+    .favorite-title {{
         text-align: center;
-        font-size: 34px;
+        font-size: 35px;
         font-weight: 900;
         color: #1565c0;
         text-transform: uppercase;
         margin-bottom: 8px;
         line-height: 1.3;
-    }
+    }}
 
-    .favorite-line {
+    .favorite-line {{
         width: 150px;
         height: 4px;
         background: #1565c0;
         border-radius: 999px;
         margin: 0 auto 18px auto;
-    }
+    }}
 
-    .favorite-desc {
+    .favorite-desc {{
         text-align: center;
         max-width: 820px;
         margin: 0 auto 24px auto;
         font-size: 18px;
         line-height: 1.8;
         color: #374151;
-    }
+    }}
 
-    .favorite-tabs {
+    .favorite-tabs {{
         display: flex;
         justify-content: center;
         flex-wrap: wrap;
         gap: 36px;
         margin-bottom: 28px;
-    }
+    }}
 
-    .favorite-tab {
+    .favorite-tab {{
         position: relative;
         font-size: 17px;
         font-weight: 700;
@@ -1329,17 +1452,17 @@ if page == "home":
         padding-bottom: 8px;
         cursor: pointer;
         transition: 0.25s ease;
-    }
+    }}
 
-    .favorite-tab:hover {
+    .favorite-tab:hover {{
         color: #1565c0;
-    }
+    }}
 
-    .favorite-tab.active {
+    .favorite-tab.active {{
         color: #1565c0;
-    }
+    }}
 
-    .favorite-tab.active::after {
+    .favorite-tab.active::after {{
         content: "";
         position: absolute;
         left: 0;
@@ -1348,17 +1471,17 @@ if page == "home":
         height: 3px;
         border-radius: 999px;
         background: #1565c0;
-    }
+    }}
 
-    .favorite-grid {
+    .favorite-grid {{
         display: grid;
         grid-template-columns: 1.35fr 1.05fr 1.05fr 1.05fr;
         grid-template-rows: 180px 180px 220px;
         gap: 10px;
-    }
+    }}
 
     /* CARD */
-    .favorite-card {
+    .favorite-card {{
         position: relative;
         overflow: hidden;
         border-radius: 16px;
@@ -1370,14 +1493,14 @@ if page == "home":
         opacity: 1;
         transform: translateY(0);
         transition: opacity 0.35s ease, transform 0.35s ease;
-    }
+    }}
 
-    .favorite-card.fade-out {
+    .favorite-card.fade-out {{
         opacity: 0;
         transform: translateY(8px);
-    }
+    }}
 
-    .favorite-card::before {
+    .favorite-card::before {{
         content: "";
         position: absolute;
         inset: 0;
@@ -1387,17 +1510,17 @@ if page == "home":
         transform: scale(1);
         transition: transform 0.5s ease;
         z-index: 0;
-    }
+    }}
 
-    .favorite-overlay {
+    .favorite-overlay {{
         position: absolute;
         inset: 0;
         background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.12));
         transition: 0.35s ease;
         z-index: 1;
-    }
+    }}
 
-    .favorite-content {
+    .favorite-content {{
         position: absolute;
         inset: 0;
         z-index: 2;
@@ -1408,18 +1531,18 @@ if page == "home":
         padding: 18px;
         text-align: center;
         color: #fff;
-    }
+    }}
 
-    .favorite-name {
+    .favorite-name {{
         margin: 0;
         font-size: 18px;
         font-weight: 800;
         text-transform: uppercase;
         line-height: 1.3;
         transition: 0.35s ease;
-    }
+    }}
 
-    .favorite-content {
+    .favorite-content {{
         position: absolute;
         inset: 0;
         z-index: 2;
@@ -1430,18 +1553,18 @@ if page == "home":
         padding: 18px;
         text-align: center;
         color: #fff;
-    }
+    }}
 
-    .favorite-name {
+    .favorite-name {{
         margin: 0;
         font-size: 18px;
         font-weight: 800;
         text-transform: uppercase;
         line-height: 1.3;
         transition: 0.35s ease;
-    }
+    }}
 
-    .favorite-info {
+    .favorite-info {{
         margin-top: 12px;
         max-width: 88%;
         font-size: 14px;
@@ -1455,137 +1578,136 @@ if page == "home":
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-shadow: 0 2px 8px rgba(0,0,0,0.35);
-    }
+    }}
 
-.favorite-card:hover::before {
+.favorite-card:hover::before {{
     transform: scale(1.08);
-}
+}}
 
-.favorite-card:hover .favorite-overlay {
+.favorite-card:hover .favorite-overlay {{
     background: linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0.28));
-}
+}}
 
-.favorite-card:hover .favorite-name {
+.favorite-card:hover .favorite-name {{
     transform: translateY(-8px);
-}
+}}
 
-.favorite-card:hover .favorite-info {
+.favorite-card:hover .favorite-info {{
     opacity: 1;
     transform: translateY(0);
-}
+}}
 
     /* vị trí từng card */
-    .card-1 {
+    .card-1 {{
         grid-column: 1 / 2;
         grid-row: 1 / 3;
-    }
+    }}
 
-    .card-2 {
+    .card-2 {{
         grid-column: 2 / 3;
         grid-row: 1 / 2;
-    }
+    }}
 
-    .card-3 {
+    .card-3 {{
         grid-column: 3 / 5;
         grid-row: 1 / 2;
-    }
+    }}
 
-    .card-4 {
+    .card-4 {{
         grid-column: 2 / 3;
         grid-row: 2 / 3;
-    }
+    }}
 
-    .card-5 {
+    .card-5 {{
         grid-column: 3 / 4;
         grid-row: 2 / 3;
-    }
+    }}
 
-    .card-6 {
+    .card-6 {{
         grid-column: 4 / 5;
         grid-row: 2 / 4;
-    }
+    }}
 
-    .card-7 {
+    .card-7 {{
         grid-column: 1 / 2;
         grid-row: 3 / 4;
-    }
+    }}
 
-    .card-8 {
+    .card-8 {{
         grid-column: 2 / 3;
         grid-row: 3 / 4;
-    }
+    }}
 
-    .card-9 {
+    .card-9 {{
         grid-column: 3 / 4;
         grid-row: 3 / 4;
-    }
+    }}
 
-    @media (max-width: 1100px) {
-        .favorite-grid {
+    @media (max-width: 1100px) {{
+        .favorite-grid {{
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 220px 220px 220px;
-        }
+        }}
 
-        .card-1 { grid-column: 1 / 2; grid-row: 1 / 3; }
-        .card-2 { grid-column: 2 / 3; grid-row: 1 / 2; }
-        .card-3 { grid-column: 3 / 4; grid-row: 1 / 2; }
-        .card-4 { grid-column: 2 / 3; grid-row: 2 / 3; }
-        .card-5 { grid-column: 3 / 4; grid-row: 2 / 3; }
-        .card-6 { grid-column: 1 / 2; grid-row: 3 / 4; }
-        .card-7 { grid-column: 2 / 3; grid-row: 3 / 4; }
-        .card-8 { grid-column: 3 / 4; grid-row: 3 / 4; }
-        .card-9 { display: none; }
-    }
+        .card-1 {{ grid-column: 1 / 2; grid-row: 1 / 3; }}
+        .card-2 {{ grid-column: 2 / 3; grid-row: 1 / 2; }}
+        .card-3 {{ grid-column: 3 / 4; grid-row: 1 / 2; }}
+        .card-4 {{ grid-column: 2 / 3; grid-row: 2 / 3; }}
+        .card-5 {{ grid-column: 3 / 4; grid-row: 2 / 3; }}
+        .card-6 {{ grid-column: 1 / 2; grid-row: 3 / 4; }}
+        .card-7 {{ grid-column: 2 / 3; grid-row: 3 / 4; }}
+        .card-8 {{ grid-column: 3 / 4; grid-row: 3 / 4; }}
+        .card-9 {{ display: none; }}
+    }}
 
-    @media (max-width: 768px) {
-        .favorite-container {
+    @media (max-width: 768px) {{
+        .favorite-container {{
             padding: 0 14px;
-        }
+        }}
 
-        .favorite-title {
+        .favorite-title {{
             font-size: 26px;
-        }
+        }}
 
-        .favorite-desc {
+        .favorite-desc {{
             font-size: 15px;
             line-height: 1.7;
-        }
+        }}
 
-        .favorite-tabs {
+        .favorite-tabs {{
             gap: 18px;
-        }
+        }}
 
-        .favorite-tab {
+        .favorite-tab {{
             font-size: 15px;
-        }
+        }}
 
-        .favorite-grid {
+        .favorite-grid {{
             grid-template-columns: 1fr;
             grid-template-rows: none;
-        }
+        }}
 
         .favorite-card,
-        .card-1, .card-2, .card-3, .card-4, .card-5, .card-6, .card-7, .card-8, .card-9 {
+        .card-1, .card-2, .card-3, .card-4, .card-5, .card-6, .card-7, .card-8, .card-9 {{
             grid-column: auto;
             grid-row: auto;
             min-height: 250px;
-        }
+        }}
 
-        .card-9 {
+        .card-9 {{
             display: block;
-        }
-    }
+        }}
+    }}
     </style>
 
     <div class="favorite-section">
         <div class="favorite-container">
 
-            <div class="favorite-title">Điểm đến yêu thích</div>
+            <div class="favorite-title">Điểm đến nổi bật</div>
             <div class="favorite-line"></div>
 
             <div class="favorite-desc">
-                Chọn một khu vực nổi bật để khám phá danh lam thắng cảnh,
-                văn hóa đặc trưng và những hành trình hấp dẫn trên khắp Việt Nam.
+                Các điểm đến tiêu biểu cùng những thông tin hữu ích về thiên nhiên, văn hóa, con người và các hành trình trải nghiệm nổi bật tại mỗi vùng miền.
             </div>
 
             <div class="favorite-tabs">
@@ -1671,177 +1793,177 @@ if page == "home":
     </div>
 
     <script>
-    const destinationData = {
+    const destinationData = {{
         north: [
-            {
+            {{
                 name: "Quảng Ninh",
-                image: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1200&auto=format&fit=crop",
-                info: "Nổi tiếng với Vịnh Hạ Long, di sản thiên nhiên thế giới với cảnh biển đảo tuyệt đẹp."
-            },
-            {
+                image: "{nb_quangninh}",
+                info: "Nổi tiếng với Vịnh Hạ Long, Quảng Ninh là điểm đến hấp dẫn với cảnh biển đảo kỳ vĩ, thiên nhiên đặc sắc và nhiều trải nghiệm du lịch đáng nhớ."
+            }},
+            {{
                 name: "Hà Giang",
-                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop",
-                info: "Vùng cao nguyên đá hùng vĩ, nổi bật với đèo Mã Pí Lèng, cột cờ Lũng Cú và mùa hoa tam giác mạch."
-            },
-            {
+                image: "{nb_hagiang}",
+                info: "Hà Giang gây ấn tượng bởi núi non hùng vĩ, những cung đèo nổi tiếng, bản làng vùng cao và vẻ đẹp hoang sơ đậm chất miền đá."
+            }},
+            {{
                 name: "Lào Cai",
-                image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1200&auto=format&fit=crop",
-                info: "Cửa ngõ Tây Bắc, nổi tiếng với Sa Pa, Fansipan, ruộng bậc thang và bản sắc văn hóa dân tộc đặc sắc."
-            },
-            {
+                image: "{nb_laocai}",
+                info: "Lào Cai là vùng đất hội tụ vẻ đẹp của núi rừng Tây Bắc, nổi bật với Sa Pa, Fansipan, ruộng bậc thang và bản sắc văn hóa dân tộc đặc sắc."
+            }},
+            {{
                 name: "Ninh Bình",
-                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop",
-                info: "Nổi bật với Tràng An, Tam Cốc, Hang Múa và quần thể danh thắng non nước hữu tình."
-            },
-            {
+                image: "{nb_ninhbinh}",
+                info: "Ninh Bình thu hút du khách bởi quần thể danh thắng Tràng An, Tam Cốc, Hang Múa và khung cảnh non nước hữu tình như tranh vẽ."
+            }},
+            {{
                 name: "Yên Bái",
-                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop",
-                info: "Được biết đến với Mù Cang Chải, ruộng bậc thang vàng óng và vẻ đẹp núi rừng Tây Bắc."
-            },
-            {
+                image: "{nb_yenbai}",
+                info: "Yên Bái được biết đến với Mù Cang Chải, những thửa ruộng bậc thang tuyệt đẹp cùng vẻ đẹp bình dị, thơ mộng của núi rừng Tây Bắc."
+            }},
+            {{
                 name: "Sơn La",
-                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop",
-                info: "Có Mộc Châu thơ mộng, đồi chè xanh mướt, mùa hoa mận và khí hậu mát mẻ quanh năm."
-            },
-            {
+                image: "{nb_sonla}",
+                info: "Sơn La nổi bật với Mộc Châu xanh mát, đồi chè trải dài, mùa hoa rực rỡ và không khí trong lành, dễ chịu quanh năm."
+            }},
+            {{
                 name: "Cao Bằng",
-                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
-                info: "Nổi tiếng với thác Bản Giốc, động Ngườm Ngao và cảnh sắc núi non biên giới hùng vĩ."
-            },
-            {
+                image: "{nb_caobang}",
+                info: "Cao Bằng là vùng đất biên giới nổi tiếng với thác Bản Giốc, động Ngườm Ngao và cảnh quan thiên nhiên hùng vĩ, nguyên sơ."
+            }},
+            {{
                 name: "Hải Phòng",
-                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
-                info: "Thành phố cảng sôi động, nổi bật với Cát Bà, Đồ Sơn và nhiều món hải sản hấp dẫn."
-            },
-            {
+                image: "{nb_haiphong}",
+                info: "Hải Phòng là thành phố cảng sôi động, hấp dẫn du khách với Cát Bà, Đồ Sơn, ẩm thực hải sản phong phú và nhịp sống trẻ trung."
+            }},
+            {{
                 name: "Hà Nội",
-                image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1200&auto=format&fit=crop",
-                info: "Thủ đô nghìn năm văn hiến với Hồ Gươm, phố cổ, Văn Miếu và nhiều giá trị lịch sử lâu đời."
-            }
+                image: "{nb_hanoi}",
+                info: "Hà Nội là thủ đô ngàn năm văn hiến, nổi bật với Hồ Gươm, phố cổ, Văn Miếu và sự giao thoa hài hòa giữa truyền thống với hiện đại."
+            }}
         ],
 
         central: [
-            {
+            {{
                 name: "Huế",
-                image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200&auto=format&fit=crop",
-                info: "Cố đô nổi tiếng với Đại Nội, lăng tẩm triều Nguyễn, chùa Thiên Mụ và nét văn hóa trầm mặc."
-            },
-            {
+                image: "{nt_hue}",
+                info: "Huế mang vẻ đẹp trầm mặc và sâu lắng, nổi tiếng với Đại Nội, lăng tẩm triều Nguyễn, chùa Thiên Mụ và nền văn hóa giàu bản sắc."
+            }},
+            {{
                 name: "Đà Nẵng",
-                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
-                info: "Thành phố biển hiện đại với Bà Nà Hills, cầu Rồng, biển Mỹ Khê và nhiều điểm check-in hấp dẫn."
-            },
-            {
+                image: "{nt_danang}",
+                info: "Đà Nẵng là thành phố biển hiện đại, nổi bật với cầu Rồng, biển Mỹ Khê, Bà Nà Hills và môi trường du lịch năng động, văn minh."
+            }},
+            {{
                 name: "Quảng Nam",
-                image: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1200&auto=format&fit=crop",
-                info: "Nổi bật với phố cổ Hội An, thánh địa Mỹ Sơn và những làng nghề truyền thống đậm bản sắc."
-            },
-            {
+                image: "{nt_quangnam}",
+                info: "Quảng Nam hấp dẫn bởi phố cổ Hội An, thánh địa Mỹ Sơn, các làng nghề truyền thống và vẻ đẹp văn hóa đậm chất miền Trung."
+            }},
+            {{
                 name: "Nha Trang",
-                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
-                info: "Thiên đường biển xanh với bãi cát đẹp, đảo hấp dẫn, hải sản phong phú và nhiều hoạt động nghỉ dưỡng."
-            },
-            {
+                image: "{nt_nhatrang}",
+                info: "Nha Trang là điểm đến lý tưởng với biển xanh, cát trắng, nhiều hòn đảo đẹp, hải sản phong phú và không khí nghỉ dưỡng sôi động."
+            }},
+            {{
                 name: "Phú Yên",
-                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop",
-                info: "Gây ấn tượng với Gành Đá Đĩa, Bãi Xép, biển trời hoang sơ và khung cảnh yên bình."
-            },
-            {
+                image: "{nt_phuyen}",
+                info: "Phú Yên gây ấn tượng bởi vẻ đẹp hoang sơ, yên bình với Gành Đá Đĩa, Bãi Xép và khung cảnh biển trời trong trẻo, thơ mộng."
+            }},
+            {{
                 name: "Bình Định",
-                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop",
-                info: "Nổi tiếng với Quy Nhơn, Eo Gió, Kỳ Co và sự kết hợp giữa biển đẹp với văn hóa võ cổ truyền."
-            },
-            {
+                image: "{nt_binhdinh}",
+                info: "Bình Định nổi tiếng với Quy Nhơn, Eo Gió, Kỳ Co cùng sự kết hợp hài hòa giữa cảnh đẹp biển trời và truyền thống võ cổ truyền."
+            }},
+            {{
                 name: "Quảng Bình",
-                image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop",
-                info: "Là quê hương của Phong Nha - Kẻ Bàng, hệ thống hang động kỳ vĩ và thiên nhiên hoang sơ."
-            },
-            {
+                image: "{nt_quangbinh}",
+                info: "Quảng Bình được mệnh danh là vương quốc hang động với Phong Nha - Kẻ Bàng, thiên nhiên hùng vĩ và nhiều kỳ quan độc đáo."
+            }},
+            {{
                 name: "Thanh Hóa",
-                image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1200&auto=format&fit=crop",
-                info: "Sở hữu biển Sầm Sơn, suối cá Cẩm Lương, thành nhà Hồ và nhiều dấu ấn lịch sử đặc sắc."
-            },
-            {
+                image: "{nt_thanhhoa}",
+                info: "Thanh Hóa sở hữu nhiều điểm đến nổi bật như biển Sầm Sơn, thành nhà Hồ, suối cá Cẩm Lương và dấu ấn lịch sử lâu đời."
+            }},
+            {{
                 name: "Nghệ An",
-                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop",
-                info: "Vùng đất giàu truyền thống với quê Bác, biển Cửa Lò, vườn quốc gia Pù Mát và nhiều giá trị văn hóa."
-            }
+                image: "{nt_nghean}",
+                info: "Nghệ An là vùng đất giàu truyền thống văn hóa và lịch sử, nổi bật với quê Bác, biển Cửa Lò và vẻ đẹp mộc mạc của xứ Nghệ."
+            }}
         ],
 
         south: [
-            {
+            {{
                 name: "TP. Hồ Chí Minh",
-                image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=1200&auto=format&fit=crop",
-                info: "Trung tâm kinh tế sôi động với chợ Bến Thành, nhà thờ Đức Bà, phố đi bộ và nhịp sống hiện đại."
-            },
-            {
-                name: "Kiên Giang (Phú Quốc)",
-                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
-                info: "Thiên đường biển đảo với bãi biển trong xanh, hoàng hôn đẹp, làng chài và khu nghỉ dưỡng nổi tiếng."
-            },
-            {
-                name: "Lâm Đồng (Đà Lạt)",
-                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop",
-                info: "Thành phố ngàn hoa với khí hậu mát mẻ, hồ Xuân Hương, đồi thông và nhiều điểm săn mây thơ mộng."
-            },
-            {
+                image: "{nn_hochiminh}",
+                info: "TP. Hồ Chí Minh là trung tâm kinh tế sôi động bậc nhất cả nước, nổi bật với nhịp sống hiện đại, các công trình biểu tượng và sức trẻ năng động."
+            }},
+            {{
+                name: "Kiên Giang",
+                image: "{nn_kiengiang}",
+                info: "Kiên Giang, đặc biệt là Phú Quốc, nổi tiếng với biển xanh, cát trắng, hoàng hôn đẹp, làng chài truyền thống và nhiều khu nghỉ dưỡng hấp dẫn."
+            }},
+            {{
+                name: "Lâm Đồng",
+                image: "{nn_lamdong}",
+                info: "Lâm Đồng với thành phố Đà Lạt mang vẻ đẹp dịu dàng, thơ mộng, nổi bật bởi khí hậu mát mẻ, đồi thông, hồ nước và muôn vàn loài hoa."
+            }},
+            {{
                 name: "Bà Rịa - Vũng Tàu",
-                image: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1200&auto=format&fit=crop",
-                info: "Điểm đến biển gần gũi với bãi Sau, tượng Chúa Kitô, hải sản ngon và không khí nghỉ dưỡng cuối tuần."
-            },
-            {
+                image: "{nn_vungtau}",
+                info: "Bà Rịa - Vũng Tàu là điểm đến quen thuộc với du khách yêu biển, nổi bật với bãi tắm đẹp, hải sản ngon và không khí nghỉ dưỡng thoải mái."
+            }},
+            {{
                 name: "Cần Thơ",
-                image: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1200&auto=format&fit=crop",
-                info: "Thủ phủ miền Tây nổi tiếng với chợ nổi Cái Răng, bến Ninh Kiều và nét văn hóa sông nước đặc trưng."
-            },
-            {
+                image: "{nn_cantho}",
+                info: "Cần Thơ là đô thị trung tâm của miền Tây Nam Bộ, nổi tiếng với chợ nổi Cái Răng, bến Ninh Kiều và nét văn hóa sông nước đặc trưng."
+            }},
+            {{
                 name: "An Giang",
-                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop",
-                info: "Nổi bật với rừng tràm Trà Sư, núi Cấm, miếu Bà Chúa Xứ và cảnh sắc miền biên giới đặc biệt."
-            },
-            {
+                image: "{nn_angiang}",
+                info: "An Giang thu hút du khách với rừng tràm Trà Sư, núi Cấm, miếu Bà Chúa Xứ và vẻ đẹp giao hòa giữa thiên nhiên với văn hóa tâm linh."
+            }},
+            {{
                 name: "Tiền Giang",
-                image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1200&auto=format&fit=crop",
-                info: "Hấp dẫn với chợ nổi, cù lao Thới Sơn, miệt vườn trái cây và những trải nghiệm sông nước dân dã."
-            },
-            {
+                image: "{nn_tiengiang}",
+                info: "Tiền Giang hấp dẫn bởi những cù lao xanh mát, vườn trái cây trù phú, chợ nổi và trải nghiệm đậm chất miền sông nước Nam Bộ."
+            }},
+            {{
                 name: "Bến Tre",
-                image: "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?q=80&w=1200&auto=format&fit=crop",
-                info: "Xứ dừa nổi tiếng với kênh rạch xanh mát, làng nghề truyền thống và nhịp sống miệt vườn yên bình."
-            },
-            {
+                image: "{nn_bentre}",
+                info: "Bến Tre nổi tiếng là xứ dừa với hệ thống kênh rạch xanh mát, làng nghề truyền thống và nhịp sống miệt vườn thanh bình, gần gũi."
+            }},
+            {{
                 name: "Đồng Tháp",
-                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
-                info: "Nổi bật với Đồng Tháp Mười, làng hoa Sa Đéc, khu du lịch sinh thái và vẻ đẹp miền Tây mộc mạc."
-            }
+                image: "{nn_dongthap}",
+                info: "Đồng Tháp ghi dấu ấn với đất sen hồng, làng hoa Sa Đéc, khu sinh thái đặc sắc và vẻ đẹp mộc mạc, yên bình của miền Tây."
+            }}
         ]
-    };
+    }};
 
     const tabs = document.querySelectorAll(".favorite-tab");
     const cards = document.querySelectorAll(".favorite-card");
 
-    function renderRegion(regionKey) {
+    function renderRegion(regionKey) {{
         const data = destinationData[regionKey];
 
         cards.forEach(card => card.classList.add("fade-out"));
 
-        setTimeout(() => {
-            cards.forEach((card, index) => {
-                card.style.backgroundImage = `url('${data[index].image}')`;
+        setTimeout(() => {{
+            cards.forEach((card, index) => {{
+                card.style.backgroundImage = `url('${{data[index].image}}')`;
                 card.querySelector(".favorite-name").textContent = data[index].name;
                 card.querySelector(".favorite-info").textContent = data[index].info;
                 card.classList.remove("fade-out");
-            });
-        }, 220);
-    }
+            }});
+        }}, 220);
+    }}
 
-    tabs.forEach(tab => {
-        tab.addEventListener("click", () => {
+    tabs.forEach(tab => {{
+        tab.addEventListener("click", () => {{
             tabs.forEach(item => item.classList.remove("active"));
             tab.classList.add("active");
             renderRegion(tab.dataset.region);
-        });
-    });
+        }});
+    }});
 
     renderRegion("north");
     </script>
@@ -1951,7 +2073,7 @@ if page == "home":
     }}
 
     .about-contact-wrap {{
-        max-width: 1320px;
+        max-width: 1600px;
         margin: 56px auto 28px auto;
         padding: 0 16px;
     }}
@@ -2031,7 +2153,7 @@ if page == "home":
     }}
 
     .brand-title {{
-        font-size: 54px;
+        font-size: 48px;
         line-height: 1.02;
         font-weight: 900;
         margin: 0 0 12px 0;
@@ -2069,19 +2191,30 @@ if page == "home":
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
     }}
+                    
+    .social-row {{
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 10px;
+    }}
 
     .info-title {{
-        font-size: 22px;
+        font-size: 27px;
         font-weight: 900;
         margin-bottom: 14px;
-        color: #ffffff;
+        color: #ffffff;            
+        text-align: center;
+        width: 100%;
     }}
 
     .info-item{{
         display:flex;
         align-items:center;
         gap:10px;
-        font-size:15px;
+        font-size:20px;
         line-height:1.9;
         color:rgba(255,255,255,0.93);
     }}
@@ -2213,6 +2346,15 @@ if page == "home":
         transform: translateY(-1px);
         box-shadow: 0 14px 26px rgba(15,23,42,0.14);
     }}
+                    
+    .feedback-status {{
+        margin-top: 12px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: #475569;
+        min-height: 20px;
+    }}
 
     @media (max-width: 1100px) {{
         .about-contact-grid {{
@@ -2295,24 +2437,95 @@ if page == "home":
                 <div class="about-right">
                     <div class="form-card">
                         <div class="form-inner">
-                            <div class="form-row">
-                                <input class="input" type="text" placeholder="Họ tên">
-                                <input class="input" type="email" placeholder="Gmail.com">
-                            </div>
 
-                            <textarea class="textarea" placeholder="Nội dung..."></textarea>
+                            <iframe
+                                id="feedback_hidden_frame"
+                                name="feedback_hidden_frame"
+                                style="display:none;"
+                            ></iframe>
 
-                            <div class="submit-wrap">
-                                <button class="submit-btn">Gửi</button>
-                            </div>
+                            <form
+                                id="feedback-form"
+                                action="https://script.google.com/macros/s/AKfycbyqh-jHTAxvtDB4aTgA_vJfsHq9PLS_QI-AH-zH0LWVbjY0XRRsMXN7XXTJiUzdRgzbLw/exec"
+                                method="POST"
+                                target="feedback_hidden_frame"
+                                onsubmit="return submitFeedbackForm(this);"
+                            >
+                                <div class="form-row">
+                                    <input class="input" name="name" type="text" placeholder="Họ tên" required>
+                                    <input class="input" name="email" type="email" placeholder="Gmail.com" required>
+                                </div>
+
+                                <textarea class="textarea" name="message" placeholder="Nội dung..." required></textarea>
+
+                                <input type="hidden" name="to_email" value="khoagaming999@gmail.com">
+
+                                <div class="submit-wrap">
+                                    <button id="feedback-submit-btn" class="submit-btn" type="submit">Gửi</button>
+                                </div>
+
+                                <div id="feedback-status" class="feedback-status"></div>
+                            </form>
+
                         </div>
                     </div>
                 </div>
 
+                <script>
+                let feedbackSubmitting = false;
+                let feedbackFormRef = null;
+
+                const feedbackFrame = document.getElementById("feedback_hidden_frame");
+
+                if (feedbackFrame) {{
+                    feedbackFrame.addEventListener("load", function () {{
+                        if (!feedbackSubmitting || !feedbackFormRef) {{
+                            return;
+                        }}
+
+                        const status = document.getElementById("feedback-status");
+                        const btn = document.getElementById("feedback-submit-btn");
+
+                        status.textContent = "Đã gửi góp ý thành công.";
+                        feedbackFormRef.reset();
+
+                        btn.disabled = false;
+                        btn.style.opacity = "1";
+                        btn.style.cursor = "pointer";
+
+                        feedbackSubmitting = false;
+                        feedbackFormRef = null;
+                    }});
+                }}
+
+                function submitFeedbackForm(form) {{
+                    const name = (form.name.value || "").trim();
+                    const email = (form.email.value || "").trim();
+                    const message = (form.message.value || "").trim();
+
+                    const status = document.getElementById("feedback-status");
+                    const btn = document.getElementById("feedback-submit-btn");
+
+                    if (!name || !email || !message) {{
+                        status.textContent = "Vui lòng nhập đầy đủ thông tin.";
+                        return false;
+                    }}
+
+                    status.textContent = "Đang gửi...";
+                    btn.disabled = true;
+                    btn.style.opacity = "0.7";
+                    btn.style.cursor = "not-allowed";
+
+                    feedbackSubmitting = true;
+                    feedbackFormRef = form;
+                    return true;
+                }}
+                </script>
+
             </div>
         </div>
     </div>
-    """, height=610, scrolling=False)
+    """, height=640, scrolling=False)
 
 elif page == "lichtrinh":
     import json
@@ -3977,6 +4190,30 @@ elif page == "diemden":
     def safe_url(value, fallback="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"):
         text = str(value).strip() if value is not None else ""
         return escape(text if text else fallback, quote=True)
+    
+    def card_image_src(value):
+        raw = str(value).strip() if value is not None else ""
+        if not raw:
+            return ""
+
+        if raw.startswith(("http://", "https://", "data:")):
+            return escape(raw, quote=True)
+
+        return image_to_data_uri([
+            raw,
+            raw.replace(".jpg", ".png"),
+            raw.replace(".jpg", ".jpeg"),
+            raw.replace(".jpg", ".webp"),
+            raw.replace(".png", ".jpg"),
+            raw.replace(".png", ".jpeg"),
+            raw.replace(".png", ".webp"),
+            raw.replace(".jpeg", ".jpg"),
+            raw.replace(".jpeg", ".png"),
+            raw.replace(".jpeg", ".webp"),
+            raw.replace(".webp", ".jpg"),
+            raw.replace(".webp", ".png"),
+            raw.replace(".webp", ".jpeg"),
+        ])
 
     def normalize_text(value):
         return str(value or "").strip().lower()
@@ -3998,18 +4235,57 @@ elif page == "diemden":
     hero_title = "Khám phá điểm đến nổi bật tại Lào Cai"
     hero_subtitle = "Tìm kiếm theo khu vực, loại hình và mùa đẹp để lựa chọn hành trình phù hợp với sở thích của bạn."
 
-    st.markdown("""
+    diemden_hero_src = image_to_data_uri([
+        "kho_anh/diem_den/chinh.jpg",
+        "kho_anh/diem_den/chinh.png",
+        "kho_anh/diem_den/chinh.jpeg",
+        "kho_anh/diem_den/chinh.webp"
+    ])
+
+    st.markdown(f"""
     <style>
-        .dd-hero-section{
-        position: relative;
-        height: 420px;
-        background:
-            linear-gradient(180deg, rgba(7, 19, 37, 0.08) 0%, rgba(7, 19, 37, 0.18) 100%),
-            url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-    }
+        .dd-hero-section{{
+            position: relative;
+            height: 500px;
+            background:
+                linear-gradient(180deg, rgba(7, 19, 37, 0.12) 0%, rgba(7, 19, 37, 0.22) 100%),
+                url('{diemden_hero_src}');
+            background-size: cover;
+            background-position: center 58%;
+            background-repeat: no-repeat;
+            animation: ddHeroZoom 1.4s ease-out forwards;
+            transform: scale(1.06);
+            opacity: 0;
+            overflow: hidden;
+        }}
+
+        .dd-hero-section::after{{
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.04);
+            animation: ddHeroFade 1.2s ease-out forwards;
+        }}
+
+        @keyframes ddHeroZoom {{
+            from {{
+                transform: scale(1.06);
+                opacity: 0;
+            }}
+            to {{
+                transform: scale(1);
+                opacity: 1;
+            }}
+        }}
+
+        @keyframes ddHeroFade {{
+            from {{
+                opacity: 0.35;
+            }}
+            to {{
+                opacity: 1;
+            }}
+        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -4022,62 +4298,90 @@ elif page == "diemden":
 
     st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
-    components.html("""
+    vi_sao_canhdep = image_to_data_uri([
+        "kho_anh/diem_den/vi_sao/canhdep.webp",
+        "kho_anh/diem_den/vi_sao/canhdep.png",
+        "kho_anh/diem_den/vi_sao/canhdep.jpg",
+        "kho_anh/diem_den/vi_sao/canhdep.jpeg"
+    ])
+
+    vi_sao_bandia = image_to_data_uri([
+        "kho_anh/diem_den/vi_sao/bandia.png",
+        "kho_anh/diem_den/vi_sao/bandia.webp",
+        "kho_anh/diem_den/vi_sao/bandia.jpg",
+        "kho_anh/diem_den/vi_sao/bandia.jpeg"
+    ])
+
+    vi_sao_vanhoa = image_to_data_uri([
+        "kho_anh/diem_den/vi_sao/vanhoa.png",
+        "kho_anh/diem_den/vi_sao/vanhoa.webp",
+        "kho_anh/diem_den/vi_sao/vanhoa.jpg",
+        "kho_anh/diem_den/vi_sao/vanhoa.jpeg"
+    ])
+
+    vi_sao_trainghiem = image_to_data_uri([
+        "kho_anh/diem_den/vi_sao/trainghiem.png",
+        "kho_anh/diem_den/vi_sao/trainghiem.webp",
+        "kho_anh/diem_den/vi_sao/trainghiem.jpg",
+        "kho_anh/diem_den/vi_sao/trainghiem.jpeg"
+    ])
+
+    components.html(f"""
     <style>
-    body{
+    body{{
         margin:0;
         background:transparent;
         font-family: Inter, Arial, sans-serif;
-    }
+    }}
 
-    .dd-benefit-wrap{
+    .dd-benefit-wrap{{
         max-width: 1320px;
         margin: 26px auto 8px auto;
         padding: 0 6px;
         box-sizing: border-box;
         text-align: center;
-    }
+    }}
 
-    .dd-benefit-title{
+    .dd-benefit-title{{
         font-size: 30px;
         font-weight: 900;
         color: #111827;
         text-transform: uppercase;
         margin-bottom: 8px;
         line-height: 1.3;
-    }
+    }}
 
-    .dd-benefit-line{
+    .dd-benefit-line{{
         width: 86px;
         height: 4px;
         background: #f59e0b;
         border-radius: 999px;
         margin: 0 auto 16px auto;
-    }
+    }}
 
-    .dd-benefit-desc{
+    .dd-benefit-desc{{
         max-width: 760px;
         margin: 0 auto 28px auto;
         font-size: 16px;
         line-height: 1.8;
         color: #4b5563;
-    }
+    }}
 
-    .dd-benefit-grid{
+    .dd-benefit-grid{{
         display:grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap:20px;
-    }
+    }}
 
-    .dd-benefit-card{
+    .dd-benefit-card{{
         background:#ffffff;
         border:1px solid #e5edf6;
         border-radius:24px;
         padding:26px 20px;
         box-shadow:0 12px 28px rgba(15,23,42,0.06);
-    }
+    }}
 
-    .dd-benefit-icon{
+    .dd-benefit-icon{{
         width:72px;
         height:72px;
         margin:0 auto 16px auto;
@@ -4086,80 +4390,86 @@ elif page == "diemden":
         display:flex;
         align-items:center;
         justify-content:center;
-        font-size:30px;
-        color:#ffffff;
         box-shadow:0 12px 24px rgba(14,165,233,0.22);
-    }
+        overflow:hidden;
+        padding:14px;
+    }}
 
-    .dd-benefit-name{
+    .dd-benefit-icon img{{
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        display:block;
+    }}
+
+    .dd-benefit-name{{
         font-size:18px;
         font-weight:800;
         color:#111827;
         margin-bottom:8px;
-    }
+    }}
 
-    .dd-benefit-text{
+    .dd-benefit-text{{
         font-size:14px;
         line-height:1.75;
         color:#6b7280;
-    }
+    }}
 
-    @media (max-width: 980px){
-        .dd-benefit-grid{
+    @media (max-width: 980px){{
+        .dd-benefit-grid{{
             grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
+        }}
+    }}
 
-    @media (max-width: 640px){
-        .dd-benefit-wrap{
+    @media (max-width: 640px){{
+        .dd-benefit-wrap{{
             padding: 0 2px;
-        }
+        }}
 
-        .dd-benefit-title{
+        .dd-benefit-title{{
             font-size:24px;
-        }
+        }}
 
-        .dd-benefit-grid{
+        .dd-benefit-grid{{
             grid-template-columns: 1fr;
-        }
-    }
+        }}
+    }}
     </style>
 
     <div class="dd-benefit-wrap">
-        <div class="dd-benefit-title">Vì sao nên khám phá?</div>
+        <div class="dd-benefit-title">VÌ SAO NÊN KHÁM PHÁ LÀO CAI CÙNG AI?</div>
         <div class="dd-benefit-line"></div>
         <div class="dd-benefit-desc">
-            Từ cảnh đẹp thiên nhiên, bản làng nguyên sơ đến chợ phiên và di tích lịch sử,
-            Lào Cai mang đến trải nghiệm đa dạng và đậm bản sắc vùng cao.
+            Khám phá Lào Cai theo cách hoàn toàn mới với trợ lý AI thông minh – giúp bạn tìm hiểu, lên lịch trình và trải nghiệm văn hóa vùng cao một cách sâu sắc, tiện lợi và cá nhân hóa.
         </div>
 
         <div class="dd-benefit-grid">
             <div class="dd-benefit-card">
-                <div class="dd-benefit-icon">🏞️</div>
+                <div class="dd-benefit-icon"><img src="{vi_sao_canhdep}" alt="Cảnh đẹp"></div>
                 <div class="dd-benefit-name">Cảnh đẹp nổi bật</div>
-                <div class="dd-benefit-text">Săn mây, đèo cao, ruộng bậc thang và nhiều điểm check-in giàu cảm xúc.</div>
+                <div class="dd-benefit-text">Khám phá Lào Cai qua góc nhìn trực quan với gợi ý thông minh từ AI – từ Sa Pa, Fansipan đến những điểm đến ít người biết.</div>
             </div>
 
             <div class="dd-benefit-card">
-                <div class="dd-benefit-icon">🏡</div>
+                <div class="dd-benefit-icon"><img src="{vi_sao_bandia}" alt="Bản địa"></div>
                 <div class="dd-benefit-name">Bản sắc bản địa</div>
-                <div class="dd-benefit-text">Khám phá đời sống, nghề thủ công và nhịp sống yên bình của đồng bào vùng cao.</div>
+                <div class="dd-benefit-text">Tìm hiểu văn hóa, phong tục và đời sống của đồng bào dân tộc thông qua dữ liệu được chọn lọc và giải thích bởi AI.</div>
             </div>
 
             <div class="dd-benefit-card">
-                <div class="dd-benefit-icon">🏯</div>
+                <div class="dd-benefit-icon"><img src="{vi_sao_vanhoa}" alt="Văn hóa"></div>
                 <div class="dd-benefit-name">Di tích - văn hóa</div>
-                <div class="dd-benefit-text">Nhà thờ cổ, dinh thự, chợ phiên và những không gian lưu giữ giá trị lịch sử.</div>
+                <div class="dd-benefit-text">NHệ thống AI cung cấp thông tin chính xác, dễ hiểu về các di tích, giúp bạn hiểu rõ giá trị lịch sử và văn hóa địa phương.</div>
             </div>
 
             <div class="dd-benefit-card">
-                <div class="dd-benefit-icon">🥾</div>
+                <div class="dd-benefit-icon"><img src="{vi_sao_trainghiem}" alt="Trải nghiệm"></div>
                 <div class="dd-benefit-name">Trải nghiệm đa dạng</div>
-                <div class="dd-benefit-text">Trekking, nghỉ dưỡng, săn ảnh, khám phá ẩm thực và hòa mình vào thiên nhiên.</div>
+                <div class="dd-benefit-text">Gợi ý lịch trình cá nhân hóa, hỗ trợ hỏi đáp nhanh chóng – giúp bạn khám phá Lào Cai thuận tiện và hiệu quả hơn bao giờ hết.</div>
             </div>
         </div>
     </div>
-    """, height=430, scrolling=False)
+    """, height=500, scrolling=False)
 
     st.markdown(f"""
     <div style="
@@ -4190,7 +4500,7 @@ elif page == "diemden":
                     color:#64748b;
                     line-height:1.7;
                 ">
-                    Tìm thấy <strong>{result_count}</strong> điểm đến phù hợp với bộ lọc hiện tại.
+                    Tìm thấy <strong>{result_count}</strong> dành cho bạn.
                 </div>
             </div>
         </div>
@@ -4525,11 +4835,12 @@ elif page == "diemden":
 
             slug_value = safe_text(item.get("slug"), "dang-cap-nhat")
             slug_raw = str(item.get("slug", "")).strip()
-            detail_href = f"?page=diemden_detail&slug={quote(slug_raw)}"          
+            detail_href = f"?page=diemden_detail&slug={quote(slug_raw)}"    
+            image_src = card_image_src(item.get("image"))      
 
             cards_html += f"""
             <div class="dd-card">
-                <div class="dd-card-image" style="background-image:url('{safe_url(item.get("image"))}');"></div>
+                <div class="dd-card-image" style="background-image:url('{image_src}');"></div>
 
                 <div class="dd-card-body">
                     <div class="dd-card-header">
@@ -4583,7 +4894,7 @@ elif page == "diemden":
 
         cards_html += "</div>"
         rows = result_count if result_count else 1
-        cards_height = max(3000, result_count * 435)
+        cards_height = max(3000, result_count * 440)
     else:
         cards_html += """
         <div class="dd-empty">
