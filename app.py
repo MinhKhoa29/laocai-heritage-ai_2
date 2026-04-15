@@ -4986,6 +4986,17 @@ elif page == "diemden_detail":
 
         return escape(DEFAULT_DETAIL_IMAGE, quote=True)
 
+    def folder_image(base_folder, filename_no_ext):
+        return image_to_data_uri([
+            f"{base_folder}/{filename_no_ext}.png",
+            f"{base_folder}/{filename_no_ext}.jpg",
+            f"{base_folder}/{filename_no_ext}.jpeg",
+            f"{base_folder}/{filename_no_ext}.webp"
+        ])
+
+    def slug_to_folder(slug: str) -> str:
+        return str(slug or "").strip().replace("-", "_")
+
     def get_audio_src(place):
         candidates = []
 
@@ -5046,7 +5057,7 @@ elif page == "diemden_detail":
     def get_images(place):
         images = []
 
-        for key in ["image", "image_2", "image_3", "image_4", "image_5", "hero_image", "banner_image"]:
+        for key in ["hero_image", "banner_image", "image", "image_2", "image_3", "image_4", "image_5"]:
             val = place.get(key)
             if isinstance(val, str) and val.strip():
                 images.append(val.strip())
@@ -5084,6 +5095,19 @@ elif page == "diemden_detail":
     if not selected_place:
         st.error("Không tìm thấy địa điểm.")
         st.stop()
+
+    detail_folder_name = slug_to_folder(selected_place.get("slug", ""))
+    detail_root = f"kho_anh/diem_den/tri_tiet/{detail_folder_name}"
+    thuyet_minh_folder = f"{detail_root}/thuyet_minh"
+
+    gallery_1 = folder_image(thuyet_minh_folder, "1")
+    gallery_2 = folder_image(thuyet_minh_folder, "2")
+    gallery_3 = folder_image(thuyet_minh_folder, "3")
+    gallery_4 = folder_image(thuyet_minh_folder, "4")
+    gallery_5 = folder_image(thuyet_minh_folder, "5")
+    gallery_6 = folder_image(thuyet_minh_folder, "6")
+    gallery_7 = folder_image(thuyet_minh_folder, "7")
+    gallery_8 = folder_image(thuyet_minh_folder, "8")
 
     name_raw = clean_text(selected_place.get("name")) or "Đang cập nhật"
     area_raw = clean_text(selected_place.get("area"))
@@ -5135,19 +5159,14 @@ elif page == "diemden_detail":
     team_image_src = asset_to_src("assets/anime_team.png", images[0])
     audio_src = get_audio_src(selected_place)
 
-    narration_gallery = images[:]
-    while len(narration_gallery) < 8:
-        narration_gallery.append(narration_gallery[-1])
-    narration_gallery = narration_gallery[:8]
-
-    narration_image_1 = narration_gallery[0]
-    narration_image_2 = narration_gallery[1]
-    narration_image_3 = narration_gallery[2]
-    narration_image_4 = narration_gallery[3]
-    narration_image_5 = narration_gallery[4]
-    narration_image_6 = narration_gallery[5]
-    narration_image_7 = narration_gallery[6]
-    narration_image_8 = narration_gallery[7]
+    narration_image_1 = gallery_1
+    narration_image_2 = gallery_2
+    narration_image_3 = gallery_3
+    narration_image_4 = gallery_4
+    narration_image_5 = gallery_5
+    narration_image_6 = gallery_6
+    narration_image_7 = gallery_7
+    narration_image_8 = gallery_8
 
     if audio_src:
         narration_audio_html = f"""
