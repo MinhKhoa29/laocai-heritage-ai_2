@@ -5100,6 +5100,22 @@ elif page == "diemden_detail":
     detail_root = f"kho_anh/diem_den/tri_tiet/{detail_folder_name}"
     thuyet_minh_folder = f"{detail_root}/thuyet_minh"
 
+    gioi_thieu_folder = f"{detail_root}/gioi_thieu"
+    intro_image_big_custom = folder_image(gioi_thieu_folder, "1")
+    intro_image_small_custom = folder_image(gioi_thieu_folder, "2")
+
+    quan_the_di_tich_folder = f"{detail_root}/quan_the_di_tich"
+    heritage_image_1 = folder_image(quan_the_di_tich_folder, "1")
+    heritage_image_2 = folder_image(quan_the_di_tich_folder, "2")
+    heritage_image_3 = folder_image(quan_the_di_tich_folder, "3")
+
+    kham_pha_folder = f"{detail_root}/kham_pha"
+
+    explore_image_1 = folder_image(kham_pha_folder, "1")
+    explore_image_2 = folder_image(kham_pha_folder, "2")
+    explore_image_3 = folder_image(kham_pha_folder, "3")
+    explore_image_4 = folder_image(kham_pha_folder, "4")
+
     gallery_1 = folder_image(thuyet_minh_folder, "1")
     gallery_2 = folder_image(thuyet_minh_folder, "2")
     gallery_3 = folder_image(thuyet_minh_folder, "3")
@@ -5112,6 +5128,7 @@ elif page == "diemden_detail":
     name_raw = clean_text(selected_place.get("name")) or "Đang cập nhật"
     area_raw = clean_text(selected_place.get("area"))
     category_raw = clean_text(selected_place.get("category"))
+
     season_raw = clean_text(selected_place.get("season"))
     best_time_raw = clean_text(selected_place.get("best_time"))
     short_desc_raw = clean_text(selected_place.get("short_desc"))
@@ -5182,11 +5199,12 @@ elif page == "diemden_detail":
         </div>
         """
     hero_image = images[0]
-    intro_image_big = images[0]
-    intro_image_small = images[1]
-    card_image_1 = images[2]
-    card_image_2 = images[3]
-    card_image_3 = images[4]
+    intro_image_big = intro_image_big_custom or images[0]
+    intro_image_small = intro_image_small_custom or images[1]
+    card_image_1 = heritage_image_1 or images[2]
+    card_image_2 = heritage_image_2 or images[3]
+    card_image_3 = heritage_image_3 or images[4]
+
     culture_image_1 = images[1]
     culture_image_2 = images[2]
     culture_image_3 = images[3]
