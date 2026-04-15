@@ -457,7 +457,7 @@ header {{visibility: hidden;}}
 
 /* Giảm padding mặc định */
 .block-container {{
-    padding-top: 0rem;
+    padding-top: 45px;
     padding-left: 0rem;
     padding-right: 0rem;
     max-width: 100%;
@@ -2559,11 +2559,34 @@ elif page == "lichtrinh":
         text = str(value).strip() if value is not None else ""
         return escape(text if text else fallback, quote=True)
 
+    def normalize_image_name(value):
+        text = str(value or "").strip().lower()
+        text = text.replace("đ", "d").replace("Đ", "D")
+        text = unicodedata.normalize("NFD", text)
+        text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+        text = re.sub(r"[^a-z0-9]+", "", text)
+        return text
+
     def itinerary_image(item):
+        to_place = str(item.get("to", "")).strip()
+        normalized_to = normalize_image_name(to_place)
+
+        local_candidates = [
+            f"kho_anh/diem_den/danh_sach/{normalized_to}.jpg",
+            f"kho_anh/diem_den/danh_sach/{normalized_to}.png",
+            f"kho_anh/diem_den/danh_sach/{normalized_to}.jpeg",
+            f"kho_anh/diem_den/danh_sach/{normalized_to}.webp",
+        ]
+
+        local_image = image_to_data_uri(local_candidates)
+        if local_image:
+            return local_image
+
         for key in ["image", "cover", "thumbnail", "hero_image", "banner_image"]:
             value = str(item.get(key, "")).strip()
             if value:
                 return value
+
         return "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
 
     def make_slug(item):
@@ -3506,19 +3529,19 @@ elif page == "lichtrinh":
 
             <!-- Khối phải -->
             <div style="
-                padding: 18px 26px;
+                padding: 18px 30px;
                 box-sizing: border-box;
                 background: #ffffff;
                 min-height: 180px;
             ">
                 <div style="
-                    font-size: 31px;
+                    font-size: 25px;
                     font-weight: 800;
                     color: #111827;
                     line-height: 1.45;
                     margin-bottom: 10px;
                 ">
-                    THÔNG BÁO lưu ý khi thực hiện lịch trình du lịch Lào Cai.
+                    LƯU Ý KHI THAM KHẢO LỊCH TRÌNH DU LỊCH LÀO CAI
                 </div>
 
                 <div style="
@@ -3530,14 +3553,14 @@ elif page == "lichtrinh":
                 </div>
 
                 <div style="
-                    font-size: 15px;
+                    font-size: 12px;
                     color: #374151;
                     line-height: 1.9;
                     margin-bottom: 14px;
                 ">
-                    Giá hiển thị chỉ mang tính tham khảo tại thời điểm tra cứu. Lịch trình có thể thay đổi tùy điều kiện
-                    thời tiết, tình trạng vận hành thực tế, lưu trú và phương tiện di chuyển. Du khách nên xác nhận lại
-                    khách sạn, vé tham quan, phương tiện và chuẩn bị đầy đủ giấy tờ cá nhân trước chuyến đi.
+                    Lịch trình được xây dựng nhằm hỗ trợ người dùng tham khảo trong quá trình tìm hiểu và lên kế hoạch chuyến đi. Thời gian di chuyển, chi phí dự kiến và một số thông tin liên quan có thể thay đổi tùy theo điều kiện thời tiết, tình trạng vận hành thực tế, thời điểm lưu trú và phương tiện được lựa chọn.
+
+Người dùng nên chủ động kiểm tra lại thông tin khách sạn, vé tham quan, phương tiện di chuyển và chuẩn bị đầy đủ giấy tờ cá nhân trước khi bắt đầu hành trình để bảo đảm chuyến đi diễn ra thuận tiện và phù hợp với thực tế.
                 </div>
 
                 <div style="
@@ -3600,39 +3623,63 @@ elif page == "lichtrinh_detail":
         return text or "lich-trinh"
 
     def get_images(route):
-        fallback = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
-        images = []
+        import random
 
-        for key in [
-            "image", "image_2", "image_3", "image_4", "image_5",
-            "cover", "thumbnail", "hero_image", "banner_image"
-        ]:
+        fallback = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop"
+
+        def normalize_folder_name(value):
+            text = clean_text(value).lower()
+            text = text.replace("đ", "d").replace("Đ", "D")
+            text = unicodedata.normalize("NFD", text)
+            text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+            text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+            return text
+
+        def list_local_images(folder):
+            if not folder or not os.path.isdir(folder):
+                return []
+
+            exts = (".png", ".jpg", ".jpeg", ".webp")
+            files = []
+
+            for name in os.listdir(folder):
+                if name.lower().endswith(exts):
+                    full_path = os.path.join(folder, name)
+                    src = image_to_data_uri([full_path])
+                    if src:
+                        files.append(src)
+
+            return files
+
+        # Ảnh to: lấy từ link trong JSON nếu có
+        main_image = ""
+        for key in ["image", "cover", "thumbnail", "hero_image", "banner_image"]:
             val = clean_text(route.get(key))
             if val:
-                images.append(val)
+                main_image = safe_url(val, fallback)
+                break
 
-        for key in ["gallery", "images", "detail_images"]:
-            val = route.get(key)
-            if isinstance(val, list):
-                for item in val:
-                    item_text = clean_text(item)
-                    if item_text:
-                        images.append(item_text)
+        # Nếu JSON chưa có ảnh to thì lấy luôn ảnh đầu trong thư mục local
+        folder_name = normalize_folder_name(route.get("to", ""))
+        small_folder = f"kho_anh/diem_den/tri_tiet/{folder_name}/thuyet_minh"
+        local_images = list_local_images(small_folder)
 
-        unique_images = []
-        seen = set()
-        for img in images:
-            if img not in seen:
-                seen.add(img)
-                unique_images.append(img)
+        if not main_image:
+            main_image = local_images[0] if local_images else fallback
 
-        if not unique_images:
-            unique_images = [fallback]
+        # Bỏ ảnh trùng với ảnh to
+        small_images = [img for img in local_images if img != main_image]
 
-        while len(unique_images) < 5:
-            unique_images.append(unique_images[-1])
+        # Lấy 4 ảnh nhỏ ngẫu nhiên
+        if len(small_images) >= 4:
+            small_images = random.sample(small_images, 4)
+        elif len(small_images) > 0:
+            while len(small_images) < 4:
+                small_images.append(random.choice(small_images))
+        else:
+            small_images = [main_image, main_image, main_image, main_image]
 
-        return [safe_url(img, fallback) for img in unique_images[:5]]
+        return [main_image] + small_images[:4]
 
     def split_paragraphs(*values):
         results = []
@@ -4998,17 +5045,35 @@ elif page == "diemden_detail":
         return str(slug or "").strip().replace("-", "_")
 
     def get_audio_src(place):
+        def normalize_audio_name(value):
+            text = str(value or "").strip().lower()
+            text = text.replace("đ", "d").replace("Đ", "D")
+            text = unicodedata.normalize("NFD", text)
+            text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+            text = text.replace("-", "_")
+            return text
+
         candidates = []
 
+        # 1) Ưu tiên nếu JSON có khai báo sẵn đường dẫn
         for key in ["audio_file", "audio", "audio_path", "thuyet_minh", "thuyetminh"]:
             val = str(place.get(key, "")).strip()
             if val:
                 candidates.append(val)
 
+        # 2) Tự dò theo slug trong thư mục am_thanh
         slug_value = str(place.get("slug", "")).strip()
         if slug_value:
-            for ext in [".mp3", ".wav", ".m4a", ".ogg"]:
-                candidates.append(os.path.join("assets", "audio", f"{slug_value}{ext}"))
+            slug_norm = normalize_audio_name(slug_value)
+            for ext in [".wav", ".mp3", ".m4a", ".ogg"]:
+                candidates.append(os.path.join("am_thanh", f"{slug_norm}{ext}"))
+
+        # 3) Tự dò theo tên địa điểm nếu cần
+        name_value = str(place.get("name", "")).strip()
+        if name_value:
+            name_norm = normalize_audio_name(name_value)
+            for ext in [".wav", ".mp3", ".m4a", ".ogg"]:
+                candidates.append(os.path.join("am_thanh", f"{name_norm}{ext}"))
 
         for candidate in candidates:
             if candidate.startswith(("http://", "https://", "data:")):
@@ -5100,6 +5165,27 @@ elif page == "diemden_detail":
     detail_root = f"kho_anh/diem_den/tri_tiet/{detail_folder_name}"
     thuyet_minh_folder = f"{detail_root}/thuyet_minh"
 
+    gioi_thieu_folder = f"{detail_root}/gioi_thieu"
+    intro_image_big_custom = folder_image(gioi_thieu_folder, "1")
+    intro_image_small_custom = folder_image(gioi_thieu_folder, "2")
+
+    quan_the_di_tich_folder = f"{detail_root}/quan_the_di_tich"
+    heritage_image_1 = folder_image(quan_the_di_tich_folder, "1")
+    heritage_image_2 = folder_image(quan_the_di_tich_folder, "2")
+    heritage_image_3 = folder_image(quan_the_di_tich_folder, "3")
+    heritage_image_4 = folder_image(quan_the_di_tich_folder, "4")
+
+    kham_pha_folder = f"{detail_root}/kham_pha"
+    explore_image_1 = folder_image(kham_pha_folder, "1")
+    explore_image_2 = folder_image(kham_pha_folder, "2")
+    explore_image_3 = folder_image(kham_pha_folder, "3")
+    explore_image_4 = folder_image(kham_pha_folder, "4")
+
+    van_hoa_folder = f"{detail_root}/van_hoa"
+    culture_custom_1 = folder_image(van_hoa_folder, "1")
+    culture_custom_2 = folder_image(van_hoa_folder, "2")
+    culture_custom_3 = folder_image(van_hoa_folder, "3")
+
     gallery_1 = folder_image(thuyet_minh_folder, "1")
     gallery_2 = folder_image(thuyet_minh_folder, "2")
     gallery_3 = folder_image(thuyet_minh_folder, "3")
@@ -5112,6 +5198,7 @@ elif page == "diemden_detail":
     name_raw = clean_text(selected_place.get("name")) or "Đang cập nhật"
     area_raw = clean_text(selected_place.get("area"))
     category_raw = clean_text(selected_place.get("category"))
+
     season_raw = clean_text(selected_place.get("season"))
     best_time_raw = clean_text(selected_place.get("best_time"))
     short_desc_raw = clean_text(selected_place.get("short_desc"))
@@ -5172,7 +5259,7 @@ elif page == "diemden_detail":
         narration_audio_html = f"""
         <div class="ddt-audio-wrap">
             <audio controls preload="metadata" src="{audio_src}"></audio>
-            <div class="ddt-audio-note">Bài thuyết minh riêng cho: {escape(name_raw)}</div>
+            <div class="ddt-audio-note">Phần thuyết minh dành cho: {escape(name_raw)}</div>
         </div>
         """
     else:
@@ -5182,18 +5269,21 @@ elif page == "diemden_detail":
         </div>
         """
     hero_image = images[0]
-    intro_image_big = images[0]
-    intro_image_small = images[1]
-    card_image_1 = images[2]
-    card_image_2 = images[3]
-    card_image_3 = images[4]
-    culture_image_1 = images[1]
-    culture_image_2 = images[2]
-    culture_image_3 = images[3]
-    standout_image_1 = images[4]
-    standout_image_2 = images[5]
-    standout_image_3 = images[0]
-    standout_image_4 = images[2]
+    intro_image_big = intro_image_big_custom or images[0]
+    intro_image_small = intro_image_small_custom or images[1]
+
+    card_image_1 = explore_image_1 or images[2]
+    card_image_2 = explore_image_2 or images[3]
+    card_image_3 = explore_image_3 or images[4]
+
+    culture_image_1 = culture_custom_1 or images[1]
+    culture_image_2 = culture_custom_2 or images[2]
+    culture_image_3 = culture_custom_3 or images[3]
+    
+    standout_image_1 = heritage_image_1 or images[4]
+    standout_image_2 = heritage_image_2 or images[5]
+    standout_image_3 = heritage_image_3 or images[0]
+    standout_image_4 = heritage_image_4 or images[2]
 
     if highlights:
         highlight_html = "".join(
@@ -6985,13 +7075,53 @@ elif page == "gioithieu":
     lichtrinh_data = load_json_list("lichtrinh.json")
 
     hero_image = get_image(diemden_data, 0)
-    overview_image = get_image(diemden_data, 1)
+    overview_image = image_to_data_uri([
+        "assets/hanhtrinh.png",
+        "assets/hanhtrinh.jpg",
+        "assets/hanhtrinh.jpeg",
+        "assets/hanhtrinh.webp"
+    ])
     collage_img_1 = get_image(diemden_data, 2)
     collage_img_2 = get_image(diemden_data, 3)
     service_img_1 = get_image(diemden_data, 4)
     service_img_2 = get_image(diemden_data, 5)
     service_img_3 = get_image(diemden_data, 6)
     service_img_4 = get_image(diemden_data, 7)
+
+    khonggianvanhoa_icon = image_to_data_uri([
+        "assets/khonggianvanhoa.png",
+        "assets/khonggianvanhoa.jpg",
+        "assets/khonggianvanhoa.jpeg",
+        "assets/khonggianvanhoa.webp"
+    ])
+
+    dulieudiaphuong_icon = image_to_data_uri([
+        "assets/dulieudiaphuong.png",
+        "assets/dulieudiaphuong.jpg",
+        "assets/dulieudiaphuong.jpeg",
+        "assets/dulieudiaphuong.webp"
+    ])
+
+    trolyai_icon = image_to_data_uri([
+        "assets/troliai.png",
+        "assets/troliai.jpg",
+        "assets/troliai.jpeg",
+        "assets/troliai.webp"
+    ])
+
+    dinhhuongbenvung_icon = image_to_data_uri([
+        "assets/dinhhuongbenvung.png",
+        "assets/dinhhuongbenvung.jpg",
+        "assets/dinhhuongbenvung.jpeg",
+        "assets/dinhhuongbenvung.webp"
+    ])
+
+    gioithieu_hero_image = image_to_data_uri([
+        "assets/anime_teamtrangchu2.png"
+    ])
+
+    gt_story_img_1 = "https://cdn.vntrip.vn/cam-nang/wp-content/uploads/2017/03/%E1%BA%A3nh-1-5.jpg"
+    gt_story_img_2 = "https://dulichtaybac.vn/wp-content/uploads/2025/11/LC-10.jpg"
 
     total_places = len(diemden_data)
     total_routes = len(lichtrinh_data)
@@ -7062,7 +7192,7 @@ elif page == "gioithieu":
             }}
 
             .gt-title {{
-                font-size: 62px;
+                font-size: 56px;
                 line-height: 1.03;
                 font-weight: 500;
                 color: #4a5a4a;
@@ -7116,25 +7246,10 @@ elif page == "gioithieu":
                 min-height: 440px;
                 border-radius: 0 0 0 120px;
                 overflow: hidden;
-                background-image: url('{hero_image}');
+                background-image: url('{gioithieu_hero_image}');
                 background-size: cover;
                 background-position: center;
                 box-shadow: 0 18px 38px rgba(0,0,0,0.08);
-            }}
-
-            .gt-image::before {{
-                content: "";
-                position: absolute;
-                inset: 0;
-                background:
-                    linear-gradient(to right, rgba(244,241,236,0.92) 0%, rgba(244,241,236,0.60) 18%, rgba(244,241,236,0.10) 38%, rgba(0,0,0,0.08) 100%);
-            }}
-
-            .gt-image::after {{
-                content: "";
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.14) 100%);
             }}
 
             .gt-feature-bar {{
@@ -7156,18 +7271,25 @@ elif page == "gioithieu":
                 padding: 10px 10px;
             }}
 
-            .gt-feature-icon {{
-                width: 42px;
-                height: 42px;
+            .gt-feature-icon{{
+                width: 46px;
+                height: 46px;
+                min-width: 42px;
                 border-radius: 12px;
-                background: #f8f5ef;
-                border: 1px solid #e3dacd;
+                background: #f7f4ee;
+                border: 1px solid #eadfce;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 20px;
-                flex-shrink: 0;
-                color: #8a765f;
+                overflow: hidden;
+                padding: 8px;
+            }}
+
+            .gt-feature-icon img{{
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                display: block;
             }}
 
             .gt-feature-title {{
@@ -7196,7 +7318,7 @@ elif page == "gioithieu":
             }}
 
             .gt-bottom-title {{
-                font-size: 54px;
+                font-size: 57px;
                 line-height: 1.08;
                 font-weight: 500;
                 color: #4a5a4a;
@@ -7246,7 +7368,7 @@ elif page == "gioithieu":
                 background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.18) 100%);
             }}
 
-            .gt-stats {{
+            .gt-stats{{
                 position: absolute;
                 left: 24px;
                 right: 24px;
@@ -7254,11 +7376,34 @@ elif page == "gioithieu":
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
                 gap: 10px;
-                background: rgba(247, 244, 238, 0.97);
-                border: 1px solid rgba(227, 218, 205, 0.95);
+                background: rgba(255, 255, 255, 0.16);
+                border: 1px solid rgba(255, 255, 255, 0.22);
                 border-radius: 18px;
-                padding: 18px 12px;
-                box-shadow: 0 14px 26px rgba(0,0,0,0.08);
+                padding: 14px;
+                backdrop-filter: blur(18px);
+                -webkit-backdrop-filter: blur(18px);
+                box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+            }}
+
+            .gt-stat{{
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.16);
+                border-radius: 14px;
+                padding: 14px 10px;
+                text-align: center;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+                transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+                cursor: pointer;
+                position: relative;
+            }}
+
+            .gt-stat:hover{{
+                transform: scale(1.08) translateY(-4px);
+                background: rgba(255, 255, 255, 0.14);
+                box-shadow:
+                    0 14px 30px rgba(0,0,0,0.18),
+                    inset 0 1px 0 rgba(255,255,255,0.16);
+                z-index: 2;
             }}
 
             .gt-stat {{
@@ -7266,26 +7411,25 @@ elif page == "gioithieu":
                 padding: 6px 4px;
             }}
 
-            .gt-stat-value {{
-                font-size: 34px;
+            .gt-stat-value{{
+                font-size: 24px;
+                font-weight: 800;
+                color: #ffffff;
                 line-height: 1.1;
-                font-weight: 700;
-                color: #4d5c4d;
-                font-family: Georgia, "Times New Roman", serif;
-                margin-bottom: 6px;
             }}
 
-            .gt-stat-label {{
+            .gt-stat-label{{
                 font-size: 14px;
                 font-weight: 700;
-                color: #5c675b;
-                margin-bottom: 3px;
+                color: #ffffff;
+                margin-top: 4px;
             }}
 
-            .gt-stat-sub {{
+            .gt-stat-sub{{
                 font-size: 12px;
                 line-height: 1.5;
-                color: #7b847a;
+                color: rgba(255,255,255,0.92);
+                margin-top: 2px;
             }}
 
             /* ===== PHẦN 2 - GIAO DIỆN BẠN VỪA GỬI ===== */
@@ -7325,7 +7469,7 @@ elif page == "gioithieu":
                 position: relative;
                 width: 250px;
                 height: 160px;
-                background-image: url('{collage_img_1}');
+                background-image: url("{gt_story_img_1}");
                 background-size: cover;
                 background-position: center;
                 box-shadow: 0 18px 34px rgba(0,0,0,0.14);
@@ -7337,7 +7481,7 @@ elif page == "gioithieu":
                 position: absolute;
                 width: 170px;
                 height: 115px;
-                background-image: url('{collage_img_2}');
+                background-image: url("{gt_story_img_2}");
                 background-size: cover;
                 background-position: center;
                 left: 78px;
@@ -7573,9 +7717,14 @@ elif page == "gioithieu":
                     font-size: 15px;
                 }}
 
-                .gt-image {{
-                    min-height: 300px;
-                    border-radius: 0 0 0 60px;
+                .gt-image{{
+                    min-height: 420px;
+                    border-radius: 0 0 0 110px;
+                    background-image: url('assets/anime_teamtrangchu2.png');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    background-position: center center;
+                    background-color: transparent;
                 }}
 
                 .gt-feature-bar,
@@ -7640,14 +7789,10 @@ elif page == "gioithieu":
                         <div class="gt-kicker">Dự án</div>
                         <h1 class="gt-title">LAO CAI HERITAGE AI</h1>
                         <div class="gt-sub">
-                            Nền tảng giới thiệu văn hóa, lịch sử và điểm đến Lào Cai theo hướng hiện đại, trực quan và ứng dụng AI.
-                            Dự án giúp người dùng tra cứu thông tin nhanh hơn, hiểu sâu hơn và có trải nghiệm khám phá thông minh hơn.
+                            Lao Cai Heritage AI là nền tảng giới thiệu văn hóa, lịch sử và các điểm đến tiêu biểu của Lào Cai theo hướng hiện đại,
+                            trực quan và ứng dụng trí tuệ nhân tạo. Dự án giúp người dùng dễ dàng tra cứu thông tin, khám phá giá trị di sản địa phương và có trải nghiệm tìm hiểu sinh động, thuận tiện hơn.
                         </div>
 
-                        <div class="gt-actions">
-                            <button class="gt-btn primary" onclick="window.parent.location.href='?page=diemden'">Khám phá điểm đến</button>
-                            <button class="gt-btn" onclick="window.parent.location.href='?page=chatbot'">Xem chatbot AI</button>
-                        </div>
                     </div>
 
                     <div class="gt-image"></div>
@@ -7655,7 +7800,9 @@ elif page == "gioithieu":
 
                 <section class="gt-feature-bar">
                     <div class="gt-feature">
-                        <div class="gt-feature-icon">🌿</div>
+                        <div class="gt-feature-icon">
+                            <img src="{khonggianvanhoa_icon}" alt="Không gian văn hóa">
+                        </div>
                         <div>
                             <div class="gt-feature-title">Không gian văn hóa</div>
                             <div class="gt-feature-text">
@@ -7665,7 +7812,9 @@ elif page == "gioithieu":
                     </div>
 
                     <div class="gt-feature">
-                        <div class="gt-feature-icon">📍</div>
+                        <div class="gt-feature-icon">
+                            <img src="{dulieudiaphuong_icon}" alt="Dữ liệu địa phương">
+                        </div>
                         <div>
                             <div class="gt-feature-title">Dữ liệu địa phương</div>
                             <div class="gt-feature-text">
@@ -7675,7 +7824,9 @@ elif page == "gioithieu":
                     </div>
 
                     <div class="gt-feature">
-                        <div class="gt-feature-icon">🤖</div>
+                        <div class="gt-feature-icon">
+                            <img src="{trolyai_icon}" alt="Trợ lý AI thông minh">
+                        </div>
                         <div>
                             <div class="gt-feature-title">Trợ lý AI thông minh</div>
                             <div class="gt-feature-text">
@@ -7685,7 +7836,9 @@ elif page == "gioithieu":
                     </div>
 
                     <div class="gt-feature">
-                        <div class="gt-feature-icon">🛡️</div>
+                        <div class="gt-feature-icon">
+                            <img src="{dinhhuongbenvung_icon}" alt="Định hướng bền vững">
+                        </div>
                         <div>
                             <div class="gt-feature-title">Định hướng bền vững</div>
                             <div class="gt-feature-text">
@@ -7698,16 +7851,13 @@ elif page == "gioithieu":
                 <section class="gt-bottom">
                     <div class="gt-bottom-left">
                         <div class="gt-kicker">Giới thiệu dự án</div>
-                        <h2 class="gt-bottom-title">Kiến tạo chuẩn mực khám phá mới</h2>
+                        <h2 class="gt-bottom-title">Mở ra hành trình khám phá mới</h2>
                         <div class="gt-bottom-text">
-                            Lao Cai Heritage AI được xây dựng nhằm hỗ trợ giới thiệu danh lam thắng cảnh, di tích lịch sử và văn hóa
-                            địa phương bằng giao diện trực quan, dễ dùng. Dự án hướng đến việc kết hợp dữ liệu số với AI để nâng cao
-                            trải nghiệm tra cứu, tham khảo lịch trình và tiếp cận thông tin cho người dùng.
+                            Lao Cai Heritage AI được phát triển với mục tiêu hỗ trợ giới thiệu danh lam thắng cảnh, ại và dễ tiếp cận. 
+                            Dự án hướng tới việc kết hợp hiệu quả giữa dữ liệu số và trí tuệ nhân tạo nhằm nâng cao trải nghiệm tra cứu thông tin, tham khảo lịch trình và khám phá Lào Cai một cách thuận tiện, sinh động hơn.
+                            di tích lịch sử và những nét đẹp văn hóa đặc trưng của địa phương bằng hình thức trực quan, hiện đ
                         </div>
 
-                        <button class="gt-small-btn" onclick="window.parent.location.href='?page=lichtrinh'">
-                            Xem lịch trình
-                        </button>
                     </div>
 
                     <div class="gt-bottom-right">
@@ -7750,11 +7900,11 @@ elif page == "gioithieu":
 
                         <div>
                             <div class="gt-story-kicker">Giá trị cốt lõi</div>
-                            <h2 class="gt-story-title">Nền tảng hỗ trợ quảng bá văn hóa và du lịch địa phương</h2>
+                            <h2 class="gt-story-title">Giải pháp quảng bá văn hóa và du lịch địa phương</h2>
                             <div class="gt-story-desc">
-                                Dự án không chỉ dừng ở việc hiển thị thông tin, mà còn hướng tới trải nghiệm tra cứu hiện đại,
-                                dễ tiếp cận và gần gũi hơn với học sinh, du khách và người dùng phổ thông. Giao diện được xây dựng
-                                theo hướng trực quan, nội dung rõ ràng và có thể phát triển lâu dài.
+                                Dự án không chỉ tập trung vào việc giới thiệu thông tin mà còn hướng đến việc tạo ra trải nghiệm tra cứu hiện đại, 
+                                thuận tiện và gần gũi với nhiều nhóm người dùng như học sinh, du khách và cộng đồng quan tâm đến văn hóa địa phương. 
+                                Hệ thống được xây dựng với giao diện trực quan, nội dung mạch lạc và định hướng phát triển bền vững trong tương lai.
                             </div>
 
                             <div class="gt-mini-features">
@@ -7791,9 +7941,6 @@ elif page == "gioithieu":
                                 </div>
                             </div>
 
-                            <button class="gt-story-btn" onclick="window.parent.location.href='?page=chatbot'">
-                                Tìm hiểu thêm
-                            </button>
                         </div>
                     </div>
                 </section>
@@ -7810,7 +7957,7 @@ elif page == "gioithieu":
                                 <div class="gt-service-number">01</div>
                                 <div class="gt-service-name">Giới thiệu điểm đến</div>
                                 <div class="gt-service-text">
-                                    Trình bày thông tin điểm đến bằng giao diện trực quan, dễ đọc và phù hợp với người dùng phổ thông.
+                                    Cung cấp thông tin về các điểm đến nổi bật của Lào Cai thông qua cách trình bày trực quan, rõ ràng và dễ theo dõi. Người dùng có thể nhanh chóng tìm hiểu đặc điểm, giá trị văn hóa, lịch sử và những nét nổi bật của từng địa danh.
                                 </div>
                             </div>
                             <div class="gt-service-image" style="background-image:url('{service_img_1}');"></div>
@@ -7821,7 +7968,7 @@ elif page == "gioithieu":
                                 <div class="gt-service-number">02</div>
                                 <div class="gt-service-name">Lịch trình thông minh</div>
                                 <div class="gt-service-text">
-                                    Gợi ý hành trình tham khảo theo khu vực, loại hình và thông tin chi phí cơ bản trong hệ thống.
+                                    Đề xuất các hành trình tham khảo dựa trên khu vực, loại hình trải nghiệm và mức chi phí cơ bản. Tính năng này giúp người dùng thuận tiện hơn trong việc lựa chọn lịch trình phù hợp với thời gian, nhu cầu và mục đích khám phá thực tế.
                                 </div>
                             </div>
                             <div class="gt-service-image" style="background-image:url('{service_img_2}');"></div>
@@ -7832,7 +7979,7 @@ elif page == "gioithieu":
                                 <div class="gt-service-number">03</div>
                                 <div class="gt-service-name">Chatbot AI</div>
                                 <div class="gt-service-text">
-                                    Hỗ trợ đặt câu hỏi nhanh về địa điểm, mùa đẹp, lịch trình và các thông tin cần tra cứu cơ bản.
+                                    Hỗ trợ giải đáp nhanh các câu hỏi liên quan đến địa điểm, mùa đẹp, lịch trình gợi ý và những thông tin cần thiết trong quá trình tham khảo. Tính năng này góp phần tăng khả năng tương tác và giúp người dùng tiếp cận thông tin một cách linh hoạt hơn.
                                 </div>
                             </div>
                             <div class="gt-service-image" style="background-image:url('{service_img_3}');"></div>
@@ -7843,7 +7990,7 @@ elif page == "gioithieu":
                                 <div class="gt-service-number">04</div>
                                 <div class="gt-service-name">Thuyết minh địa điểm</div>
                                 <div class="gt-service-text">
-                                    Tăng trải nghiệm khám phá bằng nội dung thuyết minh và phần trình bày sinh động ở trang chi tiết.
+                                    Mang đến trải nghiệm khám phá sinh động hơn thông qua nội dung thuyết minh được tích hợp ngay tại trang chi tiết. Người dùng không chỉ đọc thông tin mà còn có thể tiếp cận nội dung theo cách trực quan, hấp dẫn và gần gũi hơn.
                                 </div>
                             </div>
                             <div class="gt-service-image" style="background-image:url('{service_img_4}');"></div>
@@ -7857,4 +8004,4 @@ elif page == "gioithieu":
     </html>
     """
 
-    components.html(html, height=2300, scrolling=False)
+    components.html(html, height=2220, scrolling=False)

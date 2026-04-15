@@ -11,6 +11,7 @@
     "transport_price": "1.010.000đ",
     "ticket_price": "0đ",
     "total_price": "1.310.000đ",
+    "image": "",
     "summary_price": "Từ 1.310.000đ / khách"
   },
   {
@@ -39,6 +40,7 @@
     "transport_price": "135.000đ",
     "ticket_price": "0đ",
     "total_price": "435.000đ",
+    "image": "",
     "summary_price": "Từ 435.000đ / khách"
   },
   {
@@ -53,6 +55,7 @@
     "transport_price": "500.000đ",
     "ticket_price": "150.000đ",
     "total_price": "950.000đ",
+    "image": "",
     "summary_price": "Từ 950.000đ / khách"
   },
   {
@@ -67,6 +70,7 @@
     "transport_price": "512.000đ",
     "ticket_price": "150.000đ",
     "total_price": "1.067.000đ",
+    "image": "",
     "summary_price": "Từ 1.067.000đ / khách"
   },
   {
@@ -81,6 +85,7 @@
     "transport_price": "1.035.000đ",
     "ticket_price": "0đ",
     "total_price": "1.498.000đ",
+    "image": "",
     "summary_price": "Từ 1.498.000đ / khách"
   },
   {
@@ -95,6 +100,7 @@
     "transport_price": "1.035.000đ",
     "ticket_price": "678.000đ",
     "total_price": "1.178.000đ",
+    "image": "",
     "summary_price": "Từ 1.178.000đ / khách"
   },
   {
@@ -109,6 +115,7 @@
     "transport_price": "560.000đ",
     "ticket_price": "80.000đ – 200.000đ",
     "total_price": "1.302.000đ – 1.302.200đ",
+    "image": "",
     "summary_price": "Từ 1.302.000đ / khách"
   },
   {
@@ -123,6 +130,7 @@
     "transport_price": "488.000đ",
     "ticket_price": "20.000đ – 40.000đ",
     "total_price": "838.000đ – 838.040đ",
+    "image": "",
     "summary_price": "Từ 838.000đ / khách"
   }
 ]
