@@ -14,8 +14,9 @@ from textwrap import dedent
 from html import escape
 from google import genai
 from google.genai import types
-
 import base64
+from dotenv import load_dotenv
+load_dotenv()
 
 def image_to_data_uri(candidates):
     mime_map = {
@@ -2616,7 +2617,7 @@ elif page == "lichtrinh":
         height: 500px;
         background:
             linear-gradient(180deg, rgba(5, 18, 38, 0.20) 0%, rgba(6, 22, 43, 0.55) 100%),
-            url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop');
+            url('https://booking.muongthanh.com/upload_images/images/H%60/dinh-nui-fansipan.jpg');
         background-size: cover;
         background-position: center;
         display: flex;
@@ -2676,7 +2677,7 @@ elif page == "lichtrinh":
         text-shadow: 0 4px 16px rgba(0,0,0,0.24);
     }
 
-    .lt-hero-stats{
+    .lt-hero-stats {
         display: flex;
         justify-content: center;
         gap: 14px;
@@ -2684,7 +2685,7 @@ elif page == "lichtrinh":
         margin-top: 24px;
     }
 
-    .lt-hero-stat{
+    .lt-hero-stat {
         min-width: 168px;
         padding: 14px 18px;
         border-radius: 18px;
@@ -2693,22 +2694,91 @@ elif page == "lichtrinh":
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         box-shadow: 0 14px 30px rgba(0,0,0,0.10);
+        position: relative;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(18px);
+        animation: ltStatUp 0.75s ease-out forwards;
+        transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
     }
 
-    .lt-hero-stat-value{
-        font-size: 22px;
+    .lt-hero-stat::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            135deg,
+            rgba(255,255,255,0.22) 0%,
+            rgba(255,255,255,0.06) 45%,
+            rgba(255,255,255,0.02) 100%
+        );
+        pointer-events: none;
+    }
+
+    .lt-hero-stat::after {
+        content: "";
+        position: absolute;
+        top: -28px;
+        left: -36px;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.10);
+        filter: blur(2px);
+        pointer-events: none;
+    }
+
+    .lt-hero-stat:nth-child(1) { animation-delay: 0.10s; }
+    .lt-hero-stat:nth-child(2) { animation-delay: 0.22s; }
+    .lt-hero-stat:nth-child(3) { animation-delay: 0.34s; }
+
+    .lt-hero-stat:hover {
+        transform: translateY(-8px) scale(1.03);
+        box-shadow: 0 22px 42px rgba(0,0,0,0.16);
+        border-color: rgba(255,255,255,0.42);
+    }
+
+    .lt-hero-stat-value {
+        position: relative;
+        z-index: 2;
+        font-size: 24px;
         font-weight: 900;
         color: #ffffff;
         line-height: 1.15;
+        text-shadow: 0 4px 12px rgba(0,0,0,0.20);
+        transition: transform 0.28s ease, text-shadow 0.28s ease;
     }
 
-    .lt-hero-stat-label{
+    .lt-hero-stat-label {
+        position: relative;
+        z-index: 2;
         font-size: 12px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: rgba(255,255,255,0.78);
+        color: rgba(255,255,255,0.82);
         margin-top: 6px;
+        transition: color 0.28s ease;
+    }
+
+    .lt-hero-stat:hover .lt-hero-stat-value {
+        transform: translateY(-1px);
+        text-shadow: 0 8px 18px rgba(0,0,0,0.28);
+    }
+
+    .lt-hero-stat:hover .lt-hero-stat-label {
+        color: rgba(255,255,255,0.98);
+    }
+
+    @keyframes ltStatUp {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .lt-form-intro{
@@ -3585,6 +3655,8 @@ elif page == "lichtrinh_detail":
     from html import escape
     from string import Template
     from urllib.parse import quote_plus
+    from pathlib import Path
+    import fitz
     import streamlit.components.v1 as components
 
     try:
@@ -3621,6 +3693,74 @@ elif page == "lichtrinh_detail":
         text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
         text = re.sub(r"[^a-zA-Z0-9]+", "-", text).strip("-").lower()
         return text or "lich-trinh"
+
+    def read_text_file_any(path_str):
+        path = Path(path_str)
+        if not path.exists():
+            return ""
+
+        suffix = path.suffix.lower()
+
+        try:
+            if suffix == ".txt":
+                return path.read_text(encoding="utf-8").strip()
+
+            elif suffix == ".docx":
+                try:
+                    from docx import Document
+                    doc = Document(str(path))
+                    parts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+                    return "\n".join(parts).strip()
+                except Exception:
+                    return ""
+
+            elif suffix == ".pdf":
+                try:
+                    pdf = fitz.open(str(path))
+                    texts = []
+                    for page in pdf:
+                        txt = page.get_text("text").strip()
+                        if txt:
+                            texts.append(txt)
+                    pdf.close()
+                    return "\n".join(texts).strip()
+                except Exception:
+                    return ""
+        except Exception:
+            return ""
+
+        return ""
+
+    def pick_intro_text_file(route):
+        folder = Path("text_lichtrinh_gioithieu")
+
+        def normalize_name(value):
+            text = clean_text(value).lower()
+            text = text.replace("đ", "d").replace("Đ", "D")
+            text = unicodedata.normalize("NFD", text)
+            text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+            text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+            return text
+
+        to_name = clean_text(route.get("to"))
+        if not to_name:
+            return ""
+
+        base_name = normalize_name(to_name)
+
+        candidates = [
+            folder / f"{base_name}.txt",
+            folder / f"{base_name}.docx",
+            folder / f"{base_name}.pdf",
+        ]
+
+        for fp in candidates:
+            if fp.exists():
+                return read_text_file_any(fp)
+
+        return ""
+    
+    
 
     def get_images(route):
         import random
@@ -3783,7 +3923,13 @@ elif page == "lichtrinh_detail":
     hotel_name = clean_text(selected_route.get("hotel_name")) or "Đang cập nhật"
     hotel_price = clean_text(selected_route.get("hotel_price")) or "Liên hệ"
 
-    paragraphs = split_paragraphs(selected_route.get("note"), selected_route.get("short_desc"))
+    intro_file_text = pick_intro_text_file(selected_route)
+
+    if intro_file_text:
+        paragraphs = split_paragraphs(intro_file_text)
+    else:
+        paragraphs = split_paragraphs(selected_route.get("note"), selected_route.get("short_desc"))
+
     if not paragraphs:
         paragraphs = [
             f"Hành trình từ {from_place} đến {to_place} phù hợp cho du khách muốn khám phá vẻ đẹp địa phương một cách thuận tiện.",
@@ -3798,7 +3944,8 @@ elif page == "lichtrinh_detail":
 
     intro_html = "".join(
         f"<p>{escape(paragraph)}</p>"
-        for paragraph in paragraphs[:3]
+        for paragraph in paragraphs
+        if str(paragraph).strip()
     )
 
     html_template = Template("""
@@ -4461,6 +4608,50 @@ elif page == "diemden":
         line-height:1.75;
         color:#6b7280;
     }}
+                    
+    .dd-benefit-card{{
+        background:#ffffff;
+        border:1px solid #e5edf6;
+        border-radius:24px;
+        padding:26px 20px;
+        box-shadow:0 12px 28px rgba(15,23,42,0.06);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }}
+
+    .dd-benefit-card:hover{{
+        transform: translateY(-6px);
+        box-shadow:0 18px 34px rgba(15,23,42,0.12);
+    }}
+
+    .dd-benefit-name{{
+        font-size:18px;
+        font-weight:900;
+        color:#111827;
+        margin-bottom:10px;
+        line-height:1.35;
+        text-shadow:
+            0 1px 0 rgba(255,255,255,0.85),
+            0 4px 10px rgba(15,23,42,0.08);
+        transition: transform 0.28s ease, color 0.28s ease, text-shadow 0.28s ease;
+    }}
+
+    .dd-benefit-text{{
+        font-size:14px;
+        line-height:1.8;
+        color:#5b6472;
+        transition: transform 0.28s ease, color 0.28s ease;
+    }}
+
+    .dd-benefit-card:hover .dd-benefit-name{{
+        transform: translateY(-2px) scale(1.03);
+        color:#0f4f9a;
+        text-shadow: 0 6px 16px rgba(21,101,192,0.16);
+    }}
+
+    .dd-benefit-card:hover .dd-benefit-text{{
+        transform: translateY(-1px);
+        color:#374151;
+    }}
 
     @media (max-width: 980px){{
         .dd-benefit-grid{{
@@ -4506,7 +4697,7 @@ elif page == "diemden":
             <div class="dd-benefit-card">
                 <div class="dd-benefit-icon"><img src="{vi_sao_vanhoa}" alt="Văn hóa"></div>
                 <div class="dd-benefit-name">Di tích - văn hóa</div>
-                <div class="dd-benefit-text">NHệ thống AI cung cấp thông tin chính xác, dễ hiểu về các di tích, giúp bạn hiểu rõ giá trị lịch sử và văn hóa địa phương.</div>
+                <div class="dd-benefit-text">Hệ thống AI cung cấp thông tin chính xác, dễ hiểu về các di tích, giúp bạn hiểu rõ giá trị lịch sử và văn hóa địa phương.</div>
             </div>
 
             <div class="dd-benefit-card">
@@ -4961,8 +5152,10 @@ elif page == "diemden_detail":
     import os
     import json
     import base64
+    import fitz
     from html import escape
     from string import Template
+    from pathlib import Path
     import streamlit.components.v1 as components
 
     try:
@@ -4971,6 +5164,97 @@ elif page == "diemden_detail":
     except Exception as e:
         st.error(f"Lỗi đọc file diemden.json: {e}")
         st.stop()
+
+    def read_place_file_any(path_str):
+        path = Path(path_str)
+        if not path.exists():
+            return ""
+
+        suffix = path.suffix.lower()
+
+        try:
+            if suffix == ".txt":
+                return path.read_text(encoding="utf-8").strip()
+
+            elif suffix == ".docx":
+                from docx import Document
+                doc = Document(str(path))
+                parts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+                return "\n".join(parts).strip()
+
+            elif suffix == ".pdf":
+                pdf = fitz.open(str(path))
+                texts = []
+                for page in pdf:
+                    txt = page.get_text("text").strip()
+                    if txt:
+                        texts.append(txt)
+                pdf.close()
+                return "\n".join(texts).strip()
+        except Exception:
+            return ""
+
+        return ""
+
+    def pick_place_intro_text_file(place):
+        folder = Path("text_diemden_gioithieu")
+        slug_value = str(place.get("slug", "")).strip()
+        if not slug_value:
+            return ""
+
+        file_name = slug_value.replace("-", "_").lower()
+
+        candidates = [
+            folder / f"{file_name}.txt",
+            folder / f"{file_name}.docx",
+            folder / f"{file_name}.pdf",
+        ]
+
+        for fp in candidates:
+            if fp.exists():
+                return read_place_file_any(fp)
+
+        return ""
+
+    def pick_place_culture_text_file(place):
+        folder = Path("text_diemden_vanhoa")
+        slug_value = str(place.get("slug", "")).strip()
+        if not slug_value:
+            return ""
+
+        file_name = slug_value.replace("-", "_").lower()
+
+        candidates = [
+            folder / f"{file_name}.txt",
+            folder / f"{file_name}.docx",
+            folder / f"{file_name}.pdf",
+        ]
+
+        for fp in candidates:
+            if fp.exists():
+                return read_place_file_any(fp)
+
+        return ""
+
+    def pick_place_heritage_text_file(place):
+        folder = Path("text_diemden_quanthe")
+        slug_value = str(place.get("slug", "")).strip()
+        if not slug_value:
+            return ""
+
+        file_name = slug_value.replace("-", "_").lower()
+
+        candidates = [
+            folder / f"{file_name}.txt",
+            folder / f"{file_name}.docx",
+            folder / f"{file_name}.pdf",
+        ]
+
+        for fp in candidates:
+            if fp.exists():
+                return read_place_file_any(fp)
+
+        return ""
 
     def clean_text(value):
         if value is None:
@@ -5169,6 +5453,7 @@ elif page == "diemden_detail":
     intro_image_big_custom = folder_image(gioi_thieu_folder, "1")
     intro_image_small_custom = folder_image(gioi_thieu_folder, "2")
 
+    
     quan_the_di_tich_folder = f"{detail_root}/quan_the_di_tich"
     heritage_image_1 = folder_image(quan_the_di_tich_folder, "1")
     heritage_image_2 = folder_image(quan_the_di_tich_folder, "2")
@@ -5185,6 +5470,21 @@ elif page == "diemden_detail":
     culture_custom_1 = folder_image(van_hoa_folder, "1")
     culture_custom_2 = folder_image(van_hoa_folder, "2")
     culture_custom_3 = folder_image(van_hoa_folder, "3")
+
+    tin_tuc_hoat_dong_folder = f"{detail_root}/tin_tuc_hoat_dong"
+    activity_image_1 = folder_image(tin_tuc_hoat_dong_folder, "1")
+    activity_image_2 = folder_image(tin_tuc_hoat_dong_folder, "2")
+    activity_image_3 = folder_image(tin_tuc_hoat_dong_folder, "3")
+    activity_image_4 = folder_image(tin_tuc_hoat_dong_folder, "4")
+    activity_image_5 = folder_image(tin_tuc_hoat_dong_folder, "5")
+    activity_image_6 = folder_image(tin_tuc_hoat_dong_folder, "6")
+
+    tin_tuc_le_hoi_folder = f"{detail_root}/tin_tuc_le_hoi"
+    news_image_1 = folder_image(tin_tuc_le_hoi_folder, "1")
+    news_image_2 = folder_image(tin_tuc_le_hoi_folder, "2")
+    news_image_3 = folder_image(tin_tuc_le_hoi_folder, "3")
+    news_image_4 = folder_image(tin_tuc_le_hoi_folder, "4")
+    news_image_5 = folder_image(tin_tuc_le_hoi_folder, "5")
 
     gallery_1 = folder_image(thuyet_minh_folder, "1")
     gallery_2 = folder_image(thuyet_minh_folder, "2")
@@ -5212,32 +5512,37 @@ elif page == "diemden_detail":
     best_time = safe_text(best_time_raw)
     slug_value = safe_text(slug_raw)
 
-    paragraphs = split_paragraphs(selected_place.get("short_desc"), selected_place.get("full_desc"))
+    intro_file_text = pick_place_intro_text_file(selected_place)
+
+    if intro_file_text:
+        paragraphs = split_paragraphs(intro_file_text)
+    else:
+        paragraphs = []
+
     highlights = get_highlights(selected_place.get("highlights"))
 
-    intro_1 = paragraphs[0] if len(paragraphs) > 0 else f"{name_raw} là điểm đến đang được cập nhật nội dung chi tiết."
-    intro_2 = paragraphs[1] if len(paragraphs) > 1 else (
-        f"Địa điểm này thuộc khu vực {area_raw or 'Lào Cai'}, phù hợp để tham quan, khám phá và tìm hiểu giá trị địa phương."
-    )
+    intro_1 = paragraphs[0] if len(paragraphs) > 0 else ""
+    intro_2 = paragraphs[1] if len(paragraphs) > 1 else ""
 
-    culture_1 = paragraphs[2] if len(paragraphs) > 2 else (
-        full_desc_raw if full_desc_raw else intro_1
-    )
-    culture_2 = paragraphs[3] if len(paragraphs) > 3 else (
-        f"Thời điểm phù hợp để ghé thăm là {best_time_raw}."
-        if best_time_raw else
-        (f"Mùa đẹp để tham quan là {season_raw}." if season_raw else f"{name_raw} mang lại trải nghiệm khám phá giàu cảm xúc.")
-    )
+    culture_file_text = pick_place_culture_text_file(selected_place)
 
-    standout_text = (
-        f"Điểm nổi bật của {name_raw} gồm: {', '.join(highlights[:4])}."
-        if highlights else
-        f"{name_raw} gây ấn tượng bởi không gian, cảnh quan và trải nghiệm tham quan riêng biệt."
-    )
+    if culture_file_text:
+        culture_paragraphs = split_paragraphs(culture_file_text)
+    else:
+        culture_paragraphs = []
 
-    visit_text = (
-        f"Khu vực {area_raw or 'địa phương'} phù hợp cho hành trình {category_raw.lower() if category_raw else 'tham quan'}, đặc biệt vào {best_time_raw or season_raw or 'thời điểm thích hợp trong năm'}."
-    )
+    culture_1 = culture_paragraphs[0] if len(culture_paragraphs) > 0 else ""
+    culture_2 = culture_paragraphs[1] if len(culture_paragraphs) > 1 else ""
+
+    heritage_file_text = pick_place_heritage_text_file(selected_place)
+
+    if heritage_file_text:
+        heritage_paragraphs = split_paragraphs(heritage_file_text)
+    else:
+        heritage_paragraphs = []
+
+    standout_text = heritage_paragraphs[0] if len(heritage_paragraphs) > 0 else ""
+    visit_text = heritage_paragraphs[1] if len(heritage_paragraphs) > 1 else ""
 
     hero_kicker = " • ".join([x for x in [area_raw, category_raw] if x]) or "Khám phá điểm đến"
     hero_subtitle = short_line(short_desc_raw or intro_1, 160)
@@ -5280,10 +5585,10 @@ elif page == "diemden_detail":
     culture_image_2 = culture_custom_2 or images[2]
     culture_image_3 = culture_custom_3 or images[3]
     
-    standout_image_1 = heritage_image_1 or images[4]
-    standout_image_2 = heritage_image_2 or images[5]
-    standout_image_3 = heritage_image_3 or images[0]
-    standout_image_4 = heritage_image_4 or images[2]
+    standout_image_1 = heritage_image_1 or images[0]
+    standout_image_2 = heritage_image_2 or images[1]
+    standout_image_3 = heritage_image_3 or images[2]
+    standout_image_4 = heritage_image_4 or images[3]
 
     if highlights:
         highlight_html = "".join(
@@ -5303,13 +5608,18 @@ elif page == "diemden_detail":
     while len(news_titles) < 5:
         news_titles.append(news_titles[-1])
 
-    news_images = [images[0], images[1], images[2], images[3], images[4]]
+    news_images = [
+        news_image_1 or images[0],
+        news_image_2 or images[1],
+        news_image_3 or images[2],
+        news_image_4 or images[3],
+        news_image_5 or images[4],
+    ]
 
     news_cards_html = "".join(
         f'''
         <div class="ddt-news-card">
             <div class="ddt-news-image" style="background-image:url('{news_images[i]}');"></div>
-            <div class="ddt-news-caption">{escape(news_titles[i])}</div>
         </div>
         '''
         for i in range(5)
@@ -5336,21 +5646,27 @@ elif page == "diemden_detail":
         short_line(visit_text, 120),
     ]
 
+    activity_images = [
+        activity_image_1 or images[0],
+        activity_image_2 or images[1],
+        activity_image_3 or images[2],
+        activity_image_4 or images[3],
+        activity_image_5 or images[4],
+        activity_image_6 or images[5],
+    ]
+
     activity_date_value = clean_text(selected_place.get("updated_at")) or "Đang cập nhật"
 
     activity_cards_html = "".join(
         f'''
         <div class="ddt-activity-card">
-            <div class="ddt-activity-image" style="background-image:url('{images[i]}');"></div>
-            <div class="ddt-activity-title-card">{escape(activity_title_seed[i])}</div>
-            <div class="ddt-activity-desc">{escape(activity_desc_seed[i])}</div>
-            <div class="ddt-activity-date">{escape(activity_date_value)}</div>
+            <div class="ddt-activity-image" style="background-image:url('{activity_images[i]}');"></div>
         </div>
         '''
         for i in range(6)
     )
-
-    page_height = 7200 + max(0, len(full_desc_raw) // 600) * 240
+    
+    page_height = 5200 + max(0, len(full_desc_raw) // 800) * 120
 
     html_template = Template("""
     <style>
@@ -5512,6 +5828,7 @@ elif page == "diemden_detail":
             gap: 10px;
             justify-content: center;
             align-content: center;
+            overflow: visible;
         }
 
         .ddt-narration-item {
@@ -5520,6 +5837,16 @@ elif page == "diemden_detail":
             border: 3px solid #ffffff;
             border-radius: 10px;
             box-shadow: 0 10px 20px rgba(15,23,42,0.10);
+            transition: transform 0.28s ease, box-shadow 0.28s ease, z-index 0.28s ease;
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+        }
+
+        .ddt-narration-item:hover {
+            transform: scale(1.18);
+            box-shadow: 0 22px 40px rgba(15,23,42,0.22);
+            z-index: 20;
         }
 
         .ddt-ni-1 { grid-column: 1 / 2; grid-row: 2 / 4; }
@@ -5943,15 +6270,6 @@ elif page == "diemden_detail":
             box-shadow:0 18px 36px rgba(0,0,0,0.14);
         }
 
-        .ddt-news-caption{
-            margin-top:14px;
-            font-size:16px;
-            line-height:1.6;
-            font-weight:700;
-            color:#ffffff;
-            text-align:center;
-        }
-
         .ddt-news-controls{
             position:relative;
             z-index:2;
@@ -6030,19 +6348,6 @@ elif page == "diemden_detail":
             color:#111827;
             margin-bottom:10px;
             text-transform:uppercase;
-        }
-
-        .ddt-activity-desc{
-            font-size:15px;
-            line-height:1.7;
-            color:#475569;
-            margin-bottom:10px;
-        }
-
-        .ddt-activity-date{
-            font-size:14px;
-            font-weight:500;
-            color:#64748b;
         }
 
         @media (max-width: 1100px) {
@@ -6424,7 +6729,7 @@ elif page == "diemden_detail":
             <div class="ddt-wrap">
                 <div class="ddt-news-head">
                     <div class="ddt-news-kicker">Thông tin</div>
-                    <h2 class="ddt-news-title ddt-script">Tin tức lễ hội</h2>
+                    <h2 class="ddt-news-title ddt-script">Sắc màu văn hóa Lào Cai</h2>
                 </div>
 
                 <div class="ddt-news-slider">
@@ -6501,7 +6806,7 @@ elif page == "diemden_detail":
             <div class="ddt-wrap">
                 <div class="ddt-activity-head">
                     <div class="ddt-activity-kicker">Thông tin</div>
-                    <h2 class="ddt-activity-title ddt-script">Tin tức hoạt động</h2>
+                    <h2 class="ddt-activity-title ddt-script">Hoạt động nổi bật</h2>
                 </div>
 
                 <div class="ddt-activity-grid">
