@@ -1,7 +1,5 @@
 streamlit
-pandas
-Pillow
-requests
+google-genai
+python-dotenv
+PyMuPDF
 python-docx
-PyPDF2
-google-generativeai
