@@ -595,18 +595,27 @@ header {{visibility: hidden;}}
 
 @media (max-width: 768px) {{
     .hero {{
-        min-height: calc(100vh - 72px);
-        padding: 0 24px;
+        min-height: 420px !important;
+        padding: 88px 16px 28px 16px !important;
+        align-items: center !important;
+        background-position: center center !important;
+    }}
+
+    .hero-content {{
+        max-width: 100% !important;
+        text-align: center !important;
     }}
 
     .hero-title {{
-        font-size: 42px;
-        line-height: 1.15;
+        font-size: 28px !important;
+        line-height: 1.28 !important;
+        margin-bottom: 12px !important;
     }}
 
     .hero-subtitle {{
-        font-size: 18px;
-        line-height: 1.65;
+        font-size: 14px !important;
+        line-height: 1.7 !important;
+        opacity: 0.96 !important;
     }}
 }}
 
@@ -823,6 +832,75 @@ header {{visibility: hidden;}}
     font-size: 17px;
     color: #334155;
     line-height: 1.8;
+}}
+
+@media (max-width: 768px) {{
+    html, body {{
+        overflow-x: hidden !important;
+    }}
+
+    .stApp {{
+        overflow-x: hidden !important;
+    }}
+
+    .block-container {{
+        padding-top: 78px !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }}
+
+    .navbar {{
+        height: auto !important;
+        min-height: 64px !important;
+        padding: 10px 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        gap: 8px !important;
+    }}
+
+    .logo {{
+        width: 100% !important;
+        min-width: 0 !important;
+        gap: 10px !important;
+        align-items: center !important;
+    }}
+
+    .logo img {{
+        height: 40px !important;
+        width: auto !important;
+        flex-shrink: 0 !important;
+    }}
+
+    .logo-text {{
+        font-size: 18px !important;
+        line-height: 1.2 !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }}
+
+    .nav-links {{
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px 14px !important;
+        align-items: center !important;
+    }}
+
+    .nav-links a {{
+        font-size: 14px !important;
+        padding: 2px 0 !important;
+        line-height: 1.3 !important;
+        white-space: nowrap !important;
+    }}
+
+    .nav-links a.active::after {{
+        bottom: -3px !important;
+        height: 2px !important;
+    }}
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -1073,17 +1151,41 @@ if page == "home":
     }}
 
     @media (max-width: 768px) {{
+        .product-section {{
+            padding: 18px 0 10px 0;
+        }}
+
         .product-container {{
-            padding: 0 16px;
+            padding: 0 12px;
+        }}
+
+        .product-header {{
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 18px;
         }}
 
         .product-title {{
-            font-size: 24px;
+            font-size: 20px;
+            line-height: 1.35;
+        }}
+
+        .product-line {{
+            width: 90px;
+            margin-bottom: 12px;
         }}
 
         .product-desc {{
-            font-size: 16px;
+            font-size: 14px;
             line-height: 1.7;
+        }}
+
+        .arrow-box {{
+            width: 100%;
+            justify-content: flex-start;
+            gap: 10px;
+            margin-top: 0;
         }}
 
         .carousel-wrap {{
@@ -1092,15 +1194,25 @@ if page == "home":
 
         .product-card {{
             flex: 0 0 100%;
-            height: 250px;
+            height: 220px;
+            border-radius: 18px;
+        }}
+
+        .product-text {{
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            font-size: 13px;
+            line-height: 1.45;
         }}
 
         .arrow-btn {{
-            width: 46px;
-            height: 46px;
-            font-size: 22px;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
         }}
     }}
+                    
     </style>
 
     <div class="product-section">
@@ -1672,43 +1784,124 @@ if page == "home":
     }}
 
     @media (max-width: 768px) {{
+        .favorite-section {{
+            padding: 12px 0 4px 0;
+        }}
+
         .favorite-container {{
-            padding: 0 14px;
+            padding: 0 12px;
         }}
 
         .favorite-title {{
-            font-size: 26px;
+            font-size: 22px;
+            line-height: 1.35;
+        }}
+
+        .favorite-line {{
+            width: 90px;
+            margin-bottom: 12px;
         }}
 
         .favorite-desc {{
-            font-size: 15px;
+            font-size: 14px;
             line-height: 1.7;
+            margin-bottom: 18px;
         }}
 
         .favorite-tabs {{
-            gap: 18px;
+            gap: 10px 16px;
+            margin-bottom: 18px;
         }}
 
         .favorite-tab {{
-            font-size: 15px;
+            font-size: 14px;
+            padding-bottom: 6px;
         }}
 
         .favorite-grid {{
-            grid-template-columns: 1fr;
-            grid-template-rows: none;
+            grid-template-columns: 1.15fr 1fr;
+            grid-template-rows: 145px 145px 95px 95px 95px;
+            gap: 10px;
         }}
 
-        .favorite-card,
-        .card-1, .card-2, .card-3, .card-4, .card-5, .card-6, .card-7, .card-8, .card-9 {{
-            grid-column: auto;
-            grid-row: auto;
-            min-height: 250px;
+        .favorite-card {{
+            border-radius: 12px;
+        }}
+
+        .favorite-content {{
+            padding: 10px;
+        }}
+
+        .favorite-name {{
+            font-size: 14px;
+            line-height: 1.25;
+        }}
+
+        .favorite-info {{
+            margin-top: 6px;
+            max-width: 94%;
+            font-size: 11px;
+            line-height: 1.45;
+            opacity: 1;
+            transform: none;
+            -webkit-line-clamp: 3;
+        }}
+
+        .card-1 {{
+            grid-column: 1 / 2;
+            grid-row: 1 / 3;
+            min-height: 300px;
+        }}
+
+        .card-2 {{
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+            min-height: 145px;
+        }}
+
+        .card-3 {{
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+            min-height: 145px;
+        }}
+
+        .card-4 {{
+            grid-column: 1 / 2;
+            grid-row: 3 / 4;
+            min-height: 95px;
+        }}
+
+        .card-5 {{
+            grid-column: 2 / 3;
+            grid-row: 3 / 4;
+            min-height: 95px;
+        }}
+
+        .card-6 {{
+            grid-column: 1 / 3;
+            grid-row: 4 / 5;
+            min-height: 95px;
+        }}
+
+        .card-7 {{
+            grid-column: 1 / 2;
+            grid-row: 5 / 6;
+            min-height: 95px;
+        }}
+
+        .card-8 {{
+            grid-column: 2 / 3;
+            grid-row: 5 / 6;
+            min-height: 95px;
         }}
 
         .card-9 {{
-            display: block;
+            grid-column: 1 / 3;
+            grid-row: auto;
+            min-height: 95px;
         }}
     }}
+                           
     </style>
 
     <div class="favorite-section">
@@ -1978,7 +2171,7 @@ if page == "home":
 
     renderRegion("north");
     </script>
-    """), height=900, scrolling=False)
+    """), height=850, scrolling=False)
 
     # Footer
     home_logo_src = image_to_data_uri([
@@ -2378,35 +2571,147 @@ if page == "home":
     }}
 
     @media (max-width: 720px) {{
+        .about-contact-wrap {{
+            margin: 20px auto 18px auto;
+            padding: 0 10px;
+        }}
+
         .about-contact {{
-            padding: 22px 18px;
-            border-radius: 26px;
+            padding: 16px 12px;
+            border-radius: 22px;
+        }}
+
+        .about-contact-grid {{
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }}
+
+        .about-left {{
+            gap: 0;
         }}
 
         .brand-row {{
             flex-direction: column;
             align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
         }}
 
         .brand-logo {{
-            width: 142px;
-            height: 142px;
-            min-width: 142px;
+            width: 92px;
+            height: 92px;
+            min-width: 92px;
+            border-width: 3px;
         }}
 
         .brand-title {{
-            font-size: 34px;
+            font-size: 25px;
+            line-height: 1.05;
+            margin: 0 0 8px 0;
         }}
 
-        .about-bottom,
+        .brand-subtitle {{
+            font-size: 13px;
+            line-height: 1.7;
+            max-width: 100%;
+        }}
+
+        .brand-line {{
+            width: 120px;
+            margin-top: 12px;
+        }}
+
+        .about-bottom {{
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 6px;
+        }}
+
+        .info-box {{
+            border-radius: 18px;
+            padding: 14px 14px;
+        }}
+
+        .info-title {{
+            font-size: 18px;
+            margin-bottom: 10px;
+        }}
+
+        .info-item {{
+            font-size: 14px;
+            line-height: 1.8;
+            gap: 8px;
+            align-items: flex-start;
+            word-break: break-word;
+        }}
+
+        .info-icon {{
+            width: 15px;
+            height: 15px;
+            margin-top: 4px;
+        }}
+
+        .social-row {{
+            justify-content: center;
+            gap: 10px;
+            margin-top: 4px;
+        }}
+
+        .social-btn {{
+            width: 42px;
+            height: 42px;
+        }}
+
+        .social-icon {{
+            width: 19px;
+            height: 19px;
+        }}
+
+        .about-right {{
+            display: block;
+        }}
+
+        .form-card {{
+            border-radius: 20px;
+            padding: 10px;
+        }}
+
+        .form-inner {{
+            border-radius: 16px;
+            padding: 12px;
+        }}
+
         .form-row {{
             grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }}
+
+        .input,
+        .textarea {{
+            border-radius: 12px;
+            padding: 12px 13px;
+            font-size: 14px;
         }}
 
         .textarea {{
-            min-height: 180px;
+            min-height: 130px;
+            margin-bottom: 12px;
+        }}
+
+        .submit-btn {{
+            width: 100%;
+            min-width: 100%;
+            height: 44px;
+            font-size: 17px;
+        }}
+
+        .feedback-status {{
+            font-size: 13px;
+            margin-top: 10px;
         }}
     }}
+                    
     </style>
 
     <div class="about-contact-wrap">
@@ -2536,7 +2841,7 @@ if page == "home":
             </div>
         </div>
     </div>
-    """, height=640, scrolling=False)
+    """, height=950, scrolling=False)
 
 elif page == "lichtrinh":
     import json
@@ -4463,6 +4768,14 @@ elif page == "diemden":
             overflow: hidden;
         }}
 
+        @media (max-width: 768px) {{
+            .dd-hero-section {{
+                height: 210px !important;
+                background-position: center center !important;
+                border-radius: 0 !important;
+            }}
+        }}
+
         .dd-hero-section::after{{
             content: "";
             position: absolute;
@@ -4669,19 +4982,61 @@ elif page == "diemden":
         }}
     }}
 
-    @media (max-width: 640px){{
+    @media (max-width: 768px){{
         .dd-benefit-wrap{{
-            padding: 0 2px;
+            margin: 18px auto 6px auto;
+            padding: 0 10px;
         }}
 
         .dd-benefit-title{{
-            font-size:24px;
+            font-size: 20px;
+            line-height: 1.35;
+            margin-bottom: 8px;
+        }}
+
+        .dd-benefit-line{{
+            width: 72px;
+            height: 3px;
+            margin: 0 auto 12px auto;
+        }}
+
+        .dd-benefit-desc{{
+            font-size: 13px;
+            line-height: 1.7;
+            margin: 0 auto 18px auto;
+            max-width: 100%;
         }}
 
         .dd-benefit-grid{{
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }}
+
+        .dd-benefit-card{{
+            border-radius: 16px;
+            padding: 14px 10px;
+        }}
+
+        .dd-benefit-icon{{
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 10px auto;
+            padding: 10px;
+        }}
+
+        .dd-benefit-name{{
+            font-size: 14px;
+            margin-bottom: 6px;
+            line-height: 1.35;
+        }}
+
+        .dd-benefit-text{{
+            font-size: 12px;
+            line-height: 1.6;
         }}
     }}
+                    
+                    
     </style>
 
     <div class="dd-benefit-wrap">
@@ -4716,6 +5071,36 @@ elif page == "diemden":
                 <div class="dd-benefit-text">Gợi ý lịch trình cá nhân hóa, hỗ trợ hỏi đáp nhanh chóng – giúp bạn khám phá Lào Cai thuận tiện và hiệu quả hơn bao giờ hết.</div>
             </div>
         </div>
+
+        <script>
+        function updateFrameHeight() {{
+            const height = Math.max(
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight
+            );
+
+            window.parent.postMessage({{
+                type: "streamlit:setFrameHeight",
+                height: height + 20
+            }}, "*");
+        }}
+
+        window.addEventListener("load", () => {{
+            setTimeout(updateFrameHeight, 120);
+            setTimeout(updateFrameHeight, 400);
+        }});
+
+        window.addEventListener("resize", () => {{
+            setTimeout(updateFrameHeight, 120);
+        }});
+
+        const resizeObserver = new ResizeObserver(() => {{
+            setTimeout(updateFrameHeight, 80);
+        }});
+
+        resizeObserver.observe(document.body);
+        </script>
+        
     </div>
     """, height=500, scrolling=False)
 
@@ -4723,7 +5108,7 @@ elif page == "diemden":
     <div style="
         max-width:1320px;
         margin: 8px auto 10px auto;
-        padding: 0 8px;
+        padding: 0 12px;
         box-sizing:border-box;
     ">
         <div style="
@@ -4735,7 +5120,7 @@ elif page == "diemden":
         ">
             <div>
                 <div style="
-                    font-size:30px;
+                    font-size:24px;
                     font-weight:900;
                     color:#111827;
                     line-height:1.2;
@@ -4744,7 +5129,7 @@ elif page == "diemden":
                     Danh sách điểm đến
                 </div>
                 <div style="
-                    font-size:16px;
+                    font-size:14px;
                     color:#64748b;
                     line-height:1.7;
                 ">
@@ -8093,6 +8478,7 @@ elif page == "gioithieu":
                     padding: 34px 16px 24px 16px;
                 }}
             }}
+            
         </style>
     </head>
     <body>
