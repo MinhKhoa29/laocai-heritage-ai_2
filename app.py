@@ -18,6 +18,16 @@ import base64
 from dotenv import load_dotenv
 load_dotenv()
 
+def get_gemini_api_key():
+    try:
+        key = st.secrets.get("GEMINI_API_KEY", "").strip()
+        if key:
+            return key
+    except Exception:
+        pass
+
+    return os.environ.get("GEMINI_API_KEY", "").strip()
+
 def image_to_data_uri(candidates):
     mime_map = {
         ".png": "image/png",
@@ -262,7 +272,7 @@ def ask_gemini(user_message: str, payload: dict, current_page: str, messages: li
     route_mode = route_question(user_message)
 
     if route_mode == "internal":
-        api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+        api_key = get_gemini_api_key()
         if not api_key:
             return "Bạn chưa cấu hình GEMINI_API_KEY."
 
@@ -368,7 +378,7 @@ def route_question(user_message: str) -> str:
 
 
 def ask_gemini_search(user_message: str, payload: dict, current_page: str, messages: list[dict]) -> str:
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    api_key = get_gemini_api_key()
     if not api_key:
         return "Bạn chưa cấu hình GEMINI_API_KEY."
 
