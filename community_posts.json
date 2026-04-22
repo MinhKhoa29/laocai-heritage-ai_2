@@ -1,0 +1,26 @@
+[
+  {
+    "username": "Khánh Linh",
+    "category": "Lễ hội",
+    "area": "Bắc Hà",
+    "content": "Mình rất ấn tượng với lễ hội Gầu Tào của người Mông. Không khí rất vui, nhiều hoạt động cộng đồng và mang đậm bản sắc vùng cao.",
+    "image": "https://vietnamtourism.gov.vn/post/61240",
+    "created_at": "2 giờ trước"
+  },
+  {
+    "username": "Minh Khoa",
+    "category": "Làng nghề",
+    "area": "Sa Pa",
+    "content": "Làng nghề thổ cẩm Tả Phìn là nơi rất đáng để tìm hiểu. Các sản phẩm thủ công đẹp và thể hiện rõ nét văn hóa của đồng bào địa phương.",
+    "image": "https://www.google.com/imgres?q=L%C3%A0ng%20ngh%E1%BB%81%20th%E1%BB%95%20c%E1%BA%A9m%20T%E1%BA%A3%20Ph%C3%ACn&imgurl=https%3A%2F%2Fvietsensetravel.com%2Fview%2Fat_lang-nghe-tho-cam-ta-phin_487f542bcd05a643cb0113a57f86edf6.jpg&imgrefurl=https%3A%2F%2Fvietsensetravel.com%2Flang-nghe-tho-cam-ta-phin-n.html&docid=qaEdrVJOdLeT9M&tbnid=EfYWsfF1yaE-kM&vet=12ahUKEwiPn8is2IGUAxU2rlYBHd-WBygQnPAOegQIGxAB..i&w=960&h=570&hcb=2&ved=2ahUKEwiPn8is2IGUAxU2rlYBHd-WBygQnPAOegQIGxAB",
+    "created_at": "5 giờ trước"
+  },
+  {
+    "username": "Thu Trang",
+    "category": "Trải nghiệm",
+    "area": "Bắc Hà",
+    "content": "Cuối tuần mình có dịp ghé chợ phiên Bắc Hà và thấy nơi đây rất nhộn nhịp. Ẩm thực, trang phục và không khí đều rất đặc sắc.",
+    "image": "https://dulichtaybac.vn/diem-den/lao-cai/thuong-thuc-am-thuc-cho-phien-bac-ha/",
+    "created_at": "1 ngày trước"
+  }
+]

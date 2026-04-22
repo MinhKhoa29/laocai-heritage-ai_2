@@ -10,6 +10,11 @@ import json as pyjson
 import streamlit as st
 import streamlit.components.v1 as components
 
+import sqlite3
+import hashlib
+import secrets
+from datetime import datetime, timedelta
+
 from textwrap import dedent
 from html import escape
 from google import genai
@@ -17,6 +22,432 @@ from google.genai import types
 import base64
 from dotenv import load_dotenv
 load_dotenv()
+
+DB_PATH = "laocai_heritage_ai.db"
+SESSION_HOURS = 24 * 7  # 7 ngày
+
+def get_db_conn():
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_auth_db():
+    conn = get_db_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            sid TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+                
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS community_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            username TEXT NOT NULL,
+            content TEXT NOT NULL,
+            image_url TEXT,
+            category TEXT,
+            area TEXT,
+            created_at TEXT NOT NULL,
+            is_seed INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+def create_user(username: str, password: str):
+    username = str(username or "").strip()
+    password = str(password or "").strip()
+
+    if len(username) < 4:
+        return False, "Tên đăng nhập phải từ 4 ký tự."
+    if len(password) < 6:
+        return False, "Mật khẩu phải từ 6 ký tự."
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+            (username, hash_password(password), datetime.utcnow().isoformat())
+        )
+        conn.commit()
+        return True, "Đăng ký thành công."
+    except sqlite3.IntegrityError:
+        return False, "Tên đăng nhập đã tồn tại."
+    finally:
+        conn.close()
+
+def verify_user(username: str, password: str):
+    username = str(username or "").strip()
+    password = str(password or "").strip()
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT * FROM users WHERE username = ?",
+        (username,)
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    if row["password_hash"] != hash_password(password):
+        return None
+
+    return {
+        "id": row["id"],
+        "username": row["username"]
+    }
+
+def get_user_by_id(user_id: int):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id, username, created_at FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    return {
+        "id": row["id"],
+        "username": row["username"],
+        "created_at": row["created_at"]
+    }
+
+def update_user_password(user_id: int, old_password: str, new_password: str):
+    old_password = str(old_password or "").strip()
+    new_password = str(new_password or "").strip()
+
+    if len(new_password) < 6:
+        return False, "Mật khẩu mới phải từ 6 ký tự."
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT password_hash FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+
+    if not row:
+        conn.close()
+        return False, "Không tìm thấy tài khoản."
+
+    if row["password_hash"] != hash_password(old_password):
+        conn.close()
+        return False, "Mật khẩu hiện tại chưa đúng."
+
+    cur.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (hash_password(new_password), user_id)
+    )
+    conn.commit()
+    conn.close()
+
+    return True, "Đổi mật khẩu thành công."
+
+def create_session(user_id: int) -> str:
+    sid = secrets.token_urlsafe(32)
+    now = datetime.utcnow()
+    expires = now + timedelta(hours=SESSION_HOURS)
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO user_sessions (sid, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
+        (sid, user_id, expires.isoformat(), now.isoformat())
+    )
+    conn.commit()
+    conn.close()
+    return sid
+
+def get_user_by_sid(sid: str):
+    sid = str(sid or "").strip()
+    if not sid:
+        return None
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.sid, s.user_id, s.expires_at, u.username
+        FROM user_sessions s
+        JOIN users u ON u.id = s.user_id
+        WHERE s.sid = ?
+    """, (sid,))
+    row = cur.fetchone()
+
+    if not row:
+        conn.close()
+        return None
+
+    expires_at = row["expires_at"]
+    try:
+        if datetime.fromisoformat(expires_at) < datetime.utcnow():
+            cur.execute("DELETE FROM user_sessions WHERE sid = ?", (sid,))
+            conn.commit()
+            conn.close()
+            return None
+    except Exception:
+        cur.execute("DELETE FROM user_sessions WHERE sid = ?", (sid,))
+        conn.commit()
+        conn.close()
+        return None
+
+    conn.close()
+    return {
+        "id": row["user_id"],
+        "username": row["username"],
+        "sid": row["sid"]
+    }
+
+def delete_session(sid: str):
+    sid = str(sid or "").strip()
+    if not sid:
+        return
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM user_sessions WHERE sid = ?", (sid,))
+    conn.commit()
+    conn.close()
+
+def save_chat_message(user_id: int, role: str, content: str):
+    role = str(role or "").strip()
+    content = str(content or "").strip()
+    if not user_id or not role or not content:
+        return
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO chat_messages (user_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+        (user_id, role, content, datetime.utcnow().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+def load_chat_history(user_id: int, limit: int = 100):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT role, content
+        FROM chat_messages
+        WHERE user_id = ?
+        ORDER BY id ASC
+        LIMIT ?
+    """, (user_id, limit))
+    rows = cur.fetchall()
+    conn.close()
+
+    return [{"role": row["role"], "content": row["content"]} for row in rows]
+
+def seed_default_community_posts():
+    conn = get_db_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) AS total FROM community_posts")
+    total = cur.fetchone()["total"]
+
+    if total > 0:
+        conn.close()
+        return
+
+    seed_posts = [
+        {
+            "username": "Khánh Linh",
+            "content": "Mình rất ấn tượng với lễ hội Gầu Tào của người Mông ở Bắc Hà. Không khí rất vui, nhiều hoạt động cộng đồng và mang đậm bản sắc vùng cao.",
+            "image_url": "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=1400&auto=format&fit=crop",
+            "category": "Lễ hội",
+            "area": "Bắc Hà"
+        },
+        {
+            "username": "Minh Khoa",
+            "content": "Làng nghề thổ cẩm Tả Phìn là nơi rất đáng để tìm hiểu. Các sản phẩm thủ công đẹp, tinh tế và thể hiện rõ nét văn hóa địa phương.",
+            "image_url": "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1400&auto=format&fit=crop",
+            "category": "Làng nghề",
+            "area": "Sa Pa"
+        },
+        {
+            "username": "Thu Trang",
+            "content": "Cuối tuần mình có dịp ghé chợ phiên Bắc Hà và thấy nơi đây rất nhộn nhịp. Ẩm thực, trang phục và không khí vùng cao đều rất đặc sắc.",
+            "image_url": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1400&auto=format&fit=crop",
+            "category": "Trải nghiệm",
+            "area": "Bắc Hà"
+        }
+    ]
+
+    now = datetime.utcnow().isoformat()
+
+    for item in seed_posts:
+        cur.execute("""
+            INSERT INTO community_posts (
+                user_id, username, content, image_url, category, area, created_at, is_seed
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            None,
+            item["username"],
+            item["content"],
+            item["image_url"],
+            item["category"],
+            item["area"],
+            now,
+            1
+        ))
+
+    conn.commit()
+    conn.close()
+
+
+def create_community_post(user_id: int, username: str, content: str, image_url: str = "", category: str = "", area: str = ""):
+    content = str(content or "").strip()
+    image_url = str(image_url or "").strip()
+    category = str(category or "").strip()
+    area = str(area or "").strip()
+    username = str(username or "").strip()
+
+    if len(content) < 8:
+        return False, "Nội dung bài viết phải từ 8 ký tự."
+
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO community_posts (
+            user_id, username, content, image_url, category, area, created_at, is_seed
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        user_id,
+        username,
+        content,
+        image_url,
+        category,
+        area,
+        datetime.utcnow().isoformat(),
+        0
+    ))
+    conn.commit()
+    conn.close()
+
+    return True, "Đăng bài thành công."
+
+
+def load_community_posts(limit: int = 50):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, user_id, username, content, image_url, category, area, created_at, is_seed
+        FROM community_posts
+        ORDER BY id DESC
+        LIMIT ?
+    """, (limit,))
+    rows = cur.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+
+def format_post_time(iso_text: str) -> str:
+    try:
+        dt = datetime.fromisoformat(iso_text)
+        return dt.strftime("%d/%m/%Y • %H:%M")
+    except Exception:
+        return "Vừa xong"
+
+def ensure_default_chat_history(user_id: int, default_bot_message: str):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) AS total FROM chat_messages WHERE user_id = ?", (user_id,))
+    total = cur.fetchone()["total"]
+    conn.close()
+
+    if total == 0:
+        save_chat_message(user_id, "assistant", default_bot_message)
+
+def build_app_url(page_name: str = "home", **params):
+    query = {"page": page_name}
+
+    current_sid = st.session_state.get("auth_sid", "")
+    if current_sid:
+        query["sid"] = current_sid
+
+    for k, v in params.items():
+        if v is not None and str(v).strip() != "":
+            query[k] = v
+
+    parts = [f"{k}={v}" for k, v in query.items()]
+    return "?" + "&".join(parts)
+
+def auth_logout():
+    sid = st.session_state.get("auth_sid", "")
+    if sid:
+        delete_session(sid)
+
+    for key in [
+        "auth_user",
+        "auth_sid",
+        "auth_checked",
+        "gemini_messages",
+        "gemini_loaded_user_id"
+    ]:
+        if key in st.session_state:
+            del st.session_state[key]
+
+    st.query_params.clear()
+    st.query_params["page"] = "home"
+    st.rerun()
+
+def restore_auth_from_query():
+    if st.session_state.get("auth_checked"):
+        return
+
+    st.session_state.auth_checked = True
+    sid = str(st.query_params.get("sid", "")).strip()
+
+    if not sid:
+        return
+
+    user = get_user_by_sid(sid)
+    if user:
+        st.session_state.auth_user = {
+            "id": user["id"],
+            "username": user["username"]
+        }
+        st.session_state.auth_sid = user["sid"]
 
 def get_gemini_api_key():
     try:
@@ -55,10 +486,32 @@ st.set_page_config(
     layout="wide"
 )
 
+init_auth_db()
+seed_default_community_posts()
+restore_auth_from_query()
+
+if str(st.query_params.get("logout", "0")) == "1":
+    auth_logout()
+
+page = st.query_params.get("page", "home")
+
 page = st.query_params.get("page", "home")
 
 
 # ChatBot
+# =========================
+# CHATBOT LOGIC UPGRADE
+# Thay toàn bộ đoạn từ:
+#   # ChatBot
+# đến ngay trước:
+#   hero_home_src = image_to_data_uri([
+# =========================
+
+# ChatBot
+import math
+from collections import Counter
+
+
 def _load_json_safe(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -67,17 +520,85 @@ def _load_json_safe(path):
     except Exception:
         return []
 
-def _build_chatbot_payload():
+
+def _normalize_free_text(value):
+    text = str(value or "").strip().lower()
+    text = text.replace("đ", "d").replace("Đ", "D")
+    text = unicodedata.normalize("NFD", text)
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    return text
+
+
+def normalize_query_text(value: str) -> str:
+    return _normalize_free_text(value)
+
+
+def tokenize_query(value: str) -> list[str]:
+    text = normalize_query_text(value)
+    raw_tokens = re.split(r"[^a-zA-Z0-9]+", text)
+    stopwords = {
+        "la", "va", "o", "di", "den", "cho", "toi", "minh", "ban", "co", "gi",
+        "nao", "khong", "duoc", "mot", "nhung", "cac", "ve", "tai", "ngay", "dem",
+        "tham", "khao", "vui", "giup", "em", "anh", "chi", "noi", "nay", "kia"
+    }
+    return [tok for tok in raw_tokens if len(tok) >= 2 and tok not in stopwords]
+
+
+def _safe_join_text(parts) -> str:
+    return " ".join(str(x or "").strip() for x in parts if str(x or "").strip())
+
+
+def _load_community_ai_docs(limit: int = 30):
+    docs = []
+    try:
+        posts = load_community_posts(limit=limit)
+    except Exception:
+        posts = []
+
+    for post in posts:
+        content = str(post.get("content", "")).strip()
+        if len(content) < 8:
+            continue
+
+        area = str(post.get("area", "")).strip()
+        category = str(post.get("category", "")).strip()
+        username = str(post.get("username", "")).strip()
+        created_at = str(post.get("created_at", "")).strip()
+
+        docs.append({
+            "id": f"community_{post.get('id', '')}",
+            "doc_type": "cong_dong",
+            "title": f"Bài đăng cộng đồng {username}".strip(),
+            "content": content,
+            "metadata": {
+                "area": area,
+                "category": category,
+                "username": username,
+                "created_at": created_at,
+                "source": "community"
+            },
+            "source_payload": post
+        })
+
+    return docs
+
+
+def _build_ai_knowledge_base():
     diemden = _load_json_safe("diemden.json")
     lichtrinh = _load_json_safe("lichtrinh.json")
+    lehoi_langnghe = _load_json_safe("lehoi_langnghe.json")
 
+    documents = []
     places = []
-    for item in diemden[:120]:
+    routes = []
+    festivals = []
+
+    for idx, item in enumerate(diemden[:300], start=1):
         highlights = item.get("highlights", [])
         if not isinstance(highlights, list):
             highlights = []
 
-        places.append({
+        place_obj = {
             "name": str(item.get("name", "")).strip(),
             "slug": str(item.get("slug", "")).strip(),
             "area": str(item.get("area", "")).strip(),
@@ -87,12 +608,36 @@ def _build_chatbot_payload():
             "short_desc": str(item.get("short_desc", "")).strip(),
             "full_desc": str(item.get("full_desc", "")).strip(),
             "image": str(item.get("image", "")).strip(),
-            "highlights": [str(x).strip() for x in highlights[:5] if str(x).strip()]
+            "highlights": [str(x).strip() for x in highlights[:6] if str(x).strip()]
+        }
+        places.append(place_obj)
+
+        documents.append({
+            "id": f"place_{idx}",
+            "doc_type": "diem_den",
+            "title": place_obj["name"],
+            "content": _safe_join_text([
+                place_obj["name"],
+                place_obj["area"],
+                place_obj["category"],
+                place_obj["season"],
+                place_obj["best_time"],
+                place_obj["short_desc"],
+                place_obj["full_desc"],
+                " ".join(place_obj["highlights"]),
+            ]),
+            "metadata": {
+                "area": place_obj["area"],
+                "category": place_obj["category"],
+                "season": place_obj["season"],
+                "best_time": place_obj["best_time"],
+                "source": "diemden"
+            },
+            "source_payload": place_obj
         })
 
-    routes = []
-    for item in lichtrinh[:150]:
-        routes.append({
+    for idx, item in enumerate(lichtrinh[:300], start=1):
+        route_obj = {
             "from": str(item.get("from", "")).strip(),
             "to": str(item.get("to", "")).strip(),
             "slug": str(item.get("slug", "")).strip(),
@@ -107,13 +652,85 @@ def _build_chatbot_payload():
             "total_price": str(item.get("total_price", "")).strip(),
             "note": str(item.get("note", "")).strip(),
             "short_desc": str(item.get("short_desc", "")).strip()
+        }
+        routes.append(route_obj)
+
+        documents.append({
+            "id": f"route_{idx}",
+            "doc_type": "lich_trinh",
+            "title": f"{route_obj['from']} - {route_obj['to']}".strip(" -"),
+            "content": _safe_join_text([
+                route_obj["from"],
+                route_obj["to"],
+                route_obj["category"],
+                route_obj["time_estimate"],
+                route_obj["distance_km"],
+                route_obj["transport_name"],
+                route_obj["transport_price"],
+                route_obj["ticket_price"],
+                route_obj["hotel_name"],
+                route_obj["hotel_price"],
+                route_obj["total_price"],
+                route_obj["note"],
+                route_obj["short_desc"],
+            ]),
+            "metadata": {
+                "from": route_obj["from"],
+                "to": route_obj["to"],
+                "category": route_obj["category"],
+                "time_estimate": route_obj["time_estimate"],
+                "distance_km": route_obj["distance_km"],
+                "total_price": route_obj["total_price"],
+                "source": "lichtrinh"
+            },
+            "source_payload": route_obj
         })
+
+    for idx, item in enumerate(lehoi_langnghe[:200], start=1):
+        festival_obj = {
+            "name": str(item.get("name", "")).strip(),
+            "type": str(item.get("type", "")).strip(),
+            "area": str(item.get("area", "")).strip(),
+            "season": str(item.get("season", "")).strip(),
+            "short_desc": str(item.get("short_desc", "")).strip(),
+            "full_desc": str(item.get("full_desc", "")).strip(),
+            "image": str(item.get("image", "")).strip(),
+            "highlights": [str(x).strip() for x in item.get("highlights", []) if str(x).strip()]
+            if isinstance(item.get("highlights", []), list) else []
+        }
+        festivals.append(festival_obj)
+
+        documents.append({
+            "id": f"festival_{idx}",
+            "doc_type": festival_obj["type"] or "le_hoi_lang_nghe",
+            "title": festival_obj["name"],
+            "content": _safe_join_text([
+                festival_obj["name"],
+                festival_obj["type"],
+                festival_obj["area"],
+                festival_obj["season"],
+                festival_obj["short_desc"],
+                festival_obj["full_desc"],
+                " ".join(festival_obj["highlights"]),
+            ]),
+            "metadata": {
+                "area": festival_obj["area"],
+                "category": festival_obj["type"],
+                "season": festival_obj["season"],
+                "source": "lehoi_langnghe"
+            },
+            "source_payload": festival_obj
+        })
+
+    documents.extend(_load_community_ai_docs(limit=30))
 
     return {
         "brand": "Lao Cai Heritage AI",
         "phone": "0346 538 917",
         "places": places,
         "routes": routes,
+        "festivals": festivals,
+        "documents": documents,
         "quick_questions": [
             "Sa Pa có gì đẹp?",
             "Mùa nào đi Fansipan đẹp?",
@@ -122,139 +739,523 @@ def _build_chatbot_payload():
         ]
     }
 
-CHATBOT_PAYLOAD = _build_chatbot_payload()
 
+CHATBOT_PAYLOAD = _build_ai_knowledge_base()
 GEMINI_MODEL = "gemini-2.5-flash"
 
-def normalize_query_text(value: str) -> str:
-    text = str(value or "").strip().lower()
-    text = text.replace("đ", "d").replace("Đ", "D")
-    text = unicodedata.normalize("NFD", text)
-    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
-    return text
 
-def tokenize_query(value: str) -> list[str]:
-    text = normalize_query_text(value)
-    return [tok for tok in re.split(r"[^a-zA-Z0-9]+", text) if len(tok) >= 2]
+PREFERENCE_PATTERNS = {
+    "budget_low": ["re", "thap", "tiet kiem", "gia re", "it tien", "sinh vien"],
+    "budget_mid": ["vua phai", "hop ly", "tam trung"],
+    "budget_high": ["cao cap", "sang", "xinh", "nghi duong", "cao"],
 
-def score_item(fields, tokens: list[str]) -> int:
-    joined = " ".join(str(x or "") for x in fields)
-    norm = normalize_query_text(joined)
-    score = 0
+    "nature": ["thien nhien", "san may", "nui", "rung", "hoang so", "canh dep", "thac", "ruong bac thang"],
+    "culture": ["van hoa", "ban sac", "dan toc", "le hoi", "lang nghe", "truyen thong", "cho phien"],
+    "history": ["lich su", "di tich", "tam linh", "den", "chua"],
+    "relax": ["yen tinh", "thu gian", "nghi duong", "chill", "it dong", "vang ve"],
+    "adventure": ["trekking", "leo nui", "kham pha", "mao hiem", "phuot"],
+    "food": ["am thuc", "an ngon", "dac san", "mon ngon", "an uong", "quan an"],
 
-    for tok in tokens:
-        if tok in norm:
-            score += 3
+    "family": ["gia dinh", "tre em", "bo me", "ca nha"],
+    "friends": ["nhom ban", "ban be", "team", "hoi ban"],
+    "couple": ["cap doi", "nguoi yeu", "lang man"],
+    "solo": ["mot minh", "di mot minh", "solo"],
+
+    "crowd_low": ["it dong", "yen tinh", "vang", "tranh dong"],
+    "crowd_high": ["dong vui", "nhon nhip", "soi dong"],
+
+    "weekend": ["cuoi tuan", "thu 7", "chu nhat"],
+}
+
+
+def _extract_duration_preferences(q_norm: str) -> dict:
+    prefs = {}
+    if "2 ngay 1 dem" in q_norm:
+        prefs["duration"] = "2 ngày 1 đêm"
+    elif "3 ngay 2 dem" in q_norm:
+        prefs["duration"] = "3 ngày 2 đêm"
+    elif "1 ngay" in q_norm:
+        prefs["duration"] = "1 ngày"
+    return prefs
+
+def _extract_companion_preferences(q_norm: str) -> dict:
+    prefs = {}
+
+    if any(x in q_norm for x in ["gia dinh", "tre em", "bo me", "ca nha"]):
+        prefs["companion_type"] = "gia_dinh"
+    elif any(x in q_norm for x in ["nhom ban", "ban be", "team", "hoi ban"]):
+        prefs["companion_type"] = "ban_be"
+    elif any(x in q_norm for x in ["cap doi", "nguoi yeu", "lang man"]):
+        prefs["companion_type"] = "cap_doi"
+    elif any(x in q_norm for x in ["mot minh", "di mot minh", "solo"]):
+        prefs["companion_type"] = "mot_minh"
+
+    return prefs
+
+
+def _extract_crowd_preferences(q_norm: str) -> dict:
+    prefs = {}
+
+    if any(x in q_norm for x in ["it dong", "yen tinh", "vang", "tranh dong"]):
+        prefs["crowd_preference"] = "thap"
+    elif any(x in q_norm for x in ["dong vui", "nhon nhip", "soi dong"]):
+        prefs["crowd_preference"] = "cao"
+
+    return prefs
+
+
+def _extract_weather_preferences(q_norm: str) -> dict:
+    prefs = {}
+
+    if any(x in q_norm for x in ["mat me", "troi mat", "lanh", "se lanh"]):
+        prefs["weather_preference"] = "mat"
+    elif any(x in q_norm for x in ["nang dep", "troi dep", "kho rao"]):
+        prefs["weather_preference"] = "nang_dep"
+    elif any(x in q_norm for x in ["khong mua", "tranh mua", "it mua"]):
+        prefs["weather_preference"] = "kho_rao"
+
+    return prefs
+
+
+def _extract_trip_time_preferences(q_norm: str) -> dict:
+    prefs = {}
+
+    if any(x in q_norm for x in ["cuoi tuan", "thu 7", "chu nhat"]):
+        prefs["trip_time"] = "cuoi_tuan"
+    elif any(x in q_norm for x in ["ngay thuong", "trong tuan"]):
+        prefs["trip_time"] = "ngay_thuong"
+    elif any(x in q_norm for x in ["dip le", "nghi le"]):
+        prefs["trip_time"] = "dip_le"
+
+    return prefs
+
+def analyze_user_query(user_message: str, payload: dict, messages: list[dict] | None = None) -> dict:
+    q_norm = normalize_query_text(user_message)
+    tokens = tokenize_query(user_message)
+
+    intent = "general"
+    if any(k in q_norm for k in ["goi y", "nen di dau", "phu hop", "chon", "de xuat"]):
+        intent = "goi_y"
+    elif any(k in q_norm for k in ["chi phi", "bao nhieu", "gia", "tong tien"]):
+        intent = "chi_phi"
+    elif any(k in q_norm for k in ["lich trinh", "hanh trinh", "di nhu nao"]):
+        intent = "lich_trinh"
+    elif any(k in q_norm for k in ["mua nao", "thoi diem", "mua dep"]):
+        intent = "thoi_diem"
+    elif any(k in q_norm for k in ["le hoi", "lang nghe"]):
+        intent = "van_hoa"
+    elif any(k in q_norm for k in ["hom nay", "hien tai", "moi nhat", "cap nhat", "thoi tiet"]):
+        intent = "need_web"
+
+    entities = {"places": [], "areas": [], "route_to": []}
+
+    for item in payload.get("places", []):
+        name = str(item.get("name", "")).strip()
+        area = str(item.get("area", "")).strip()
+        if name and normalize_query_text(name) in q_norm:
+            entities["places"].append(name)
+        if area and normalize_query_text(area) in q_norm and area not in entities["areas"]:
+            entities["areas"].append(area)
+
+    for item in payload.get("routes", []):
+        to_place = str(item.get("to", "")).strip()
+        if to_place and normalize_query_text(to_place) in q_norm:
+            entities["route_to"].append(to_place)
+
+    preferences = {}
+    preferences.update(_extract_duration_preferences(q_norm))
+    preferences.update(_extract_companion_preferences(q_norm))
+    preferences.update(_extract_crowd_preferences(q_norm))
+    preferences.update(_extract_weather_preferences(q_norm))
+    preferences.update(_extract_trip_time_preferences(q_norm))
+
+    for pref_key, keywords in PREFERENCE_PATTERNS.items():
+        if any(k in q_norm for k in keywords):
+            preferences[pref_key] = True
+
+        if any(x in q_norm for x in ["gan", "xung quanh", "gan day", "khong qua xa"]):
+            preferences["nearby_preference"] = True
+
+        if any(x in q_norm for x in ["an ngon", "dac san", "am thuc", "an uong"]):
+            preferences["food_focus"] = True
+
+    if "mua xuan" in q_norm:
+        preferences["season"] = "mùa xuân"
+    elif "mua he" in q_norm:
+        preferences["season"] = "mùa hè"
+    elif "mua thu" in q_norm:
+        preferences["season"] = "mùa thu"
+    elif "mua dong" in q_norm:
+        preferences["season"] = "mùa đông"
+
+    return {
+        "original_question": user_message,
+        "normalized_question": q_norm,
+        "tokens": tokens,
+        "intent": intent,
+        "entities": entities,
+        "preferences": preferences,
+    }
+
+
+
+def _merge_preferences(old_prefs: dict | None, new_prefs: dict | None) -> dict:
+    merged = dict(old_prefs or {})
+    for k, v in (new_prefs or {}).items():
+        if v not in [None, "", False, [], {}]:
+            merged[k] = v
+    return merged
+
+
+def get_user_memory_state(user_id: int):
+    key = f"ai_user_memory_{user_id}"
+    if key not in st.session_state:
+        st.session_state[key] = {
+            "preferences": {},
+            "last_entities": {},
+            "last_intent": "general"
+        }
+    return st.session_state[key]
+
+
+def update_user_memory_state(user_id: int, analysis: dict):
+    memory = get_user_memory_state(user_id)
+    memory["preferences"] = _merge_preferences(memory.get("preferences", {}), analysis.get("preferences", {}))
+    memory["last_entities"] = analysis.get("entities", {})
+    memory["last_intent"] = analysis.get("intent", "general")
+    st.session_state[f"ai_user_memory_{user_id}"] = memory
+    return memory
+
+
+def _build_token_weights(tokens: list[str]) -> Counter:
+    counter = Counter(tokens)
+    for tok in list(counter.keys()):
+        if len(tok) >= 5:
+            counter[tok] += 1
+    return counter
+
+
+def _score_document_semantic(doc: dict, analysis: dict, memory: dict | None = None) -> float:
+    content_norm = normalize_query_text(doc.get("content", ""))
+    title_norm = normalize_query_text(doc.get("title", ""))
+    metadata = doc.get("metadata", {}) or {}
+
+    token_weights = _build_token_weights(analysis.get("tokens", []))
+    score = 0.0
+
+    for tok, weight in token_weights.items():
+        if tok in title_norm:
+            score += 4.5 * weight
+        elif tok in content_norm:
+            score += 2.2 * weight
+
+    entities = analysis.get("entities", {})
+    for place in entities.get("places", []):
+        place_norm = normalize_query_text(place)
+        if place_norm and (place_norm in title_norm or place_norm in content_norm):
+            score += 9
+
+    for area in entities.get("areas", []):
+        area_norm = normalize_query_text(area)
+        if area_norm and area_norm in normalize_query_text(metadata.get("area", "")):
+            score += 6
+
+    for route_to in entities.get("route_to", []):
+        route_norm = normalize_query_text(route_to)
+        if route_norm and route_norm in normalize_query_text(metadata.get("to", "")):
+            score += 8
+
+    prefs = {}
+    prefs.update(memory.get("preferences", {}) if isinstance(memory, dict) else {})
+    prefs.update(analysis.get("preferences", {}))
+
+    if prefs.get("culture") and doc.get("doc_type") in ["le_hoi", "lang_nghe", "cong_dong"]:
+        score += 4.5
+    if prefs.get("history") and any(k in content_norm for k in ["di tich", "lich su", "den", "chua", "tam linh"]):
+        score += 4
+    if prefs.get("nature") and any(k in content_norm for k in ["thien nhien", "san may", "nui", "rung", "thac", "canh quan"]):
+        score += 4
+    if prefs.get("relax") and any(k in content_norm for k in ["yen tinh", "thu gian", "nghi duong"]):
+        score += 3
+    if prefs.get("adventure") and any(k in content_norm for k in ["trekking", "leo nui", "kham pha"]):
+        score += 3
+
+    if prefs.get("budget_low") and any(k in content_norm for k in ["re", "tiet kiem", "hop ly", "0d"]):
+        score += 2
+
+    intent = analysis.get("intent", "general")
+    if intent == "chi_phi" and doc.get("doc_type") == "lich_trinh":
+        score += 5
+    elif intent == "lich_trinh" and doc.get("doc_type") == "lich_trinh":
+        score += 5
+    elif intent == "van_hoa" and doc.get("doc_type") in ["le_hoi", "lang_nghe", "diem_den", "cong_dong"]:
+        score += 4
+    elif intent == "thoi_diem" and any(k in content_norm for k in ["mua", "thoi diem", "best time", "season"]):
+        score += 4
+    elif intent == "goi_y":
+        score += 2
 
     return score
 
-def build_context_from_payload(question: str, payload: dict, current_page: str) -> str:
-    tokens = tokenize_query(question)
 
-    places_ranked = []
-    for item in payload.get("places", []):
-        fields = [
-            item.get("name"),
-            item.get("area"),
-            item.get("category"),
-            item.get("season"),
-            item.get("best_time"),
-            item.get("short_desc"),
-            item.get("full_desc"),
-            " ".join(item.get("highlights", [])) if isinstance(item.get("highlights"), list) else ""
-        ]
-        score = score_item(fields, tokens)
-
-        # cộng điểm mạnh nếu user nhắc đúng tên địa điểm
-        name_norm = normalize_query_text(item.get("name", ""))
-        q_norm = normalize_query_text(question)
-        if name_norm and name_norm in q_norm:
-            score += 8
-
+def retrieve_relevant_documents(question: str, payload: dict, analysis: dict, memory: dict | None = None, top_k: int = 8):
+    ranked = []
+    for doc in payload.get("documents", []):
+        score = _score_document_semantic(doc, analysis=analysis, memory=memory)
         if score > 0:
-            places_ranked.append((score, item))
+            ranked.append((score, doc))
 
-    routes_ranked = []
-    for item in payload.get("routes", []):
-        fields = [
-            item.get("from"),
-            item.get("to"),
-            item.get("category"),
-            item.get("time_estimate"),
-            item.get("distance_km"),
-            item.get("transport_name"),
-            item.get("transport_price"),
-            item.get("ticket_price"),
-            item.get("hotel_name"),
-            item.get("hotel_price"),
-            item.get("total_price"),
-            item.get("note"),
-            item.get("short_desc"),
-        ]
-        score = score_item(fields, tokens)
+    ranked.sort(key=lambda x: x[0], reverse=True)
+    return [doc for score, doc in ranked[:top_k]]
 
-        to_norm = normalize_query_text(item.get("to", ""))
-        q_norm = normalize_query_text(question)
-        if to_norm and to_norm in q_norm:
-            score += 8
+def _infer_place_features(place: dict) -> dict:
+    text = normalize_query_text(_safe_join_text([
+        place.get("name", ""),
+        place.get("area", ""),
+        place.get("category", ""),
+        place.get("season", ""),
+        place.get("best_time", ""),
+        place.get("short_desc", ""),
+        place.get("full_desc", ""),
+        " ".join(place.get("highlights", [])),
+    ]))
 
+    features = {
+        "nature": any(x in text for x in ["thien nhien", "san may", "nui", "rung", "thac", "ruong bac thang", "canh dep"]),
+        "culture": any(x in text for x in ["van hoa", "dan toc", "ban sac", "cho phien", "le hoi", "lang nghe"]),
+        "history": any(x in text for x in ["di tich", "lich su", "den", "chua", "tam linh"]),
+        "relax": any(x in text for x in ["yen tinh", "thu gian", "nghi duong"]),
+        "adventure": any(x in text for x in ["trekking", "leo nui", "kham pha", "mao hiem"]),
+        "food": any(x in text for x in ["am thuc", "dac san", "mon ngon", "cho"]),
+        "budget_low": any(x in text for x in ["re", "tiet kiem", "hop ly"]),
+        "weekend_fit": True,
+    }
+
+    return features
+
+
+def _score_place_for_recommendation(place: dict, analysis: dict, memory: dict | None = None) -> tuple[float, list[str]]:
+    prefs = {}
+    if isinstance(memory, dict):
+        prefs.update(memory.get("preferences", {}) or {})
+    prefs.update(analysis.get("preferences", {}) or {})
+
+    features = _infer_place_features(place)
+    score = 0.0
+    reasons = []
+
+    if prefs.get("nature") and features["nature"]:
+        score += 3
+        reasons.append("hợp sở thích thiên nhiên")
+
+    if prefs.get("culture") and features["culture"]:
+        score += 3
+        reasons.append("có giá trị văn hóa bản địa")
+
+    if prefs.get("history") and features["history"]:
+        score += 3
+        reasons.append("phù hợp nhu cầu tìm hiểu lịch sử - tâm linh")
+
+    if prefs.get("relax") and features["relax"]:
+        score += 2.5
+        reasons.append("phù hợp nghỉ ngơi, thư giãn")
+
+    if prefs.get("adventure") and features["adventure"]:
+        score += 2.5
+        reasons.append("phù hợp trải nghiệm khám phá")
+
+    if prefs.get("food_focus") and features["food"]:
+        score += 2
+        reasons.append("có thể kết hợp trải nghiệm ẩm thực")
+
+    if prefs.get("budget_low") and features["budget_low"]:
+        score += 2
+        reasons.append("phù hợp ngân sách tiết kiệm")
+
+    if prefs.get("trip_time") == "cuoi_tuan":
+        score += 1.5
+        reasons.append("phù hợp chuyến đi cuối tuần")
+
+    if prefs.get("duration") in ["1 ngày", "2 ngày 1 đêm", "3 ngày 2 đêm"]:
+        score += 1.5
+        reasons.append(f"hợp thời lượng {prefs.get('duration')}")
+
+    if prefs.get("companion_type") == "gia_dinh":
+        score += 1.2
+        reasons.append("dễ đi cùng gia đình")
+    elif prefs.get("companion_type") == "ban_be":
+        score += 1.2
+        reasons.append("phù hợp đi cùng nhóm bạn")
+    elif prefs.get("companion_type") == "cap_doi":
+        score += 1.2
+        reasons.append("phù hợp cho cặp đôi")
+
+    if prefs.get("crowd_preference") == "thap" and (features["relax"] or features["nature"]):
+        score += 1.5
+        reasons.append("phù hợp nhu cầu tránh nơi đông đúc")
+
+    if prefs.get("season"):
+        place_season = normalize_query_text(place.get("season", "") + " " + place.get("best_time", ""))
+        if normalize_query_text(prefs["season"]) in place_season:
+            score += 2
+            reasons.append(f"phù hợp {prefs['season']}")
+
+    if analysis.get("entities", {}).get("areas"):
+        place_area_norm = normalize_query_text(place.get("area", ""))
+        for area in analysis["entities"]["areas"]:
+            if normalize_query_text(area) in place_area_norm:
+                score += 2
+                reasons.append(f"đúng khu vực {area}")
+                break
+
+    return score, reasons
+
+
+def recommend_places_for_user(payload: dict, analysis: dict, memory: dict | None = None, top_k: int = 3):
+    ranked = []
+
+    for place in payload.get("places", []):
+        score, reasons = _score_place_for_recommendation(place, analysis, memory)
         if score > 0:
-            routes_ranked.append((score, item))
+            ranked.append({
+                "score": score,
+                "place": place,
+                "reasons": reasons[:4]
+            })
 
-    places_ranked.sort(key=lambda x: x[0], reverse=True)
-    routes_ranked.sort(key=lambda x: x[0], reverse=True)
+    ranked.sort(key=lambda x: x["score"], reverse=True)
+    return ranked[:top_k]
 
-    top_places = [item for _, item in places_ranked[:5]]
-    top_routes = [item for _, item in routes_ranked[:5]]
+def build_personalized_recommendation_text(payload: dict, analysis: dict, memory: dict | None = None) -> str:
+    recommendations = recommend_places_for_user(payload, analysis, memory, top_k=3)
+
+    if not recommendations:
+        return ""
+
+    lines = []
+    lines.append("Gợi ý cá nhân hóa phù hợp với nhu cầu của bạn:")
+    lines.append("")
+
+    for idx, item in enumerate(recommendations, 1):
+        place = item["place"]
+        reasons = item["reasons"]
+        short_desc = str(place.get("short_desc", "")).strip()
+
+        lines.append(f"{idx}. {place.get('name', 'Địa điểm')}")
+        if place.get("area"):
+            lines.append(f"   - Khu vực: {place['area']}")
+        if short_desc:
+            lines.append(f"   - Mô tả: {short_desc}")
+        if reasons:
+            lines.append(f"   - Lý do phù hợp: {', '.join(reasons)}")
+        lines.append("")
+
+    lines.append("Bạn có thể hỏi tiếp như: 'gợi ý lịch trình chi tiết cho lựa chọn số 1' hoặc 'địa điểm nào phù hợp nhất cho cuối tuần này?'")
+    return "\n".join(lines).strip()
+
+def _format_preferences_for_prompt(memory: dict | None, analysis: dict | None) -> str:
+    prefs = {}
+    if isinstance(memory, dict):
+        prefs.update(memory.get("preferences", {}) or {})
+    if isinstance(analysis, dict):
+        prefs.update(analysis.get("preferences", {}) or {})
+
+    if not prefs:
+        return "Chưa có sở thích/ngữ cảnh nổi bật được ghi nhớ."
+
+    lines = []
+    mapping = {
+        "duration": "Thời lượng mong muốn",
+        "season": "Mùa quan tâm",
+        "budget_low": "Ngân sách thấp",
+        "budget_mid": "Ngân sách vừa phải",
+        "budget_high": "Ngân sách cao",
+        "nature": "Ưu tiên thiên nhiên",
+        "culture": "Ưu tiên văn hóa bản địa",
+        "history": "Ưu tiên lịch sử/tâm linh",
+        "relax": "Ưu tiên yên tĩnh/thư giãn",
+        "adventure": "Ưu tiên khám phá/mạo hiểm",
+        "companion_type": "Đối tượng đi cùng",
+        "crowd_preference": "Mức độ đông đúc mong muốn",
+        "weather_preference": "Thời tiết mong muốn",
+        "trip_time": "Thời điểm chuyến đi",
+        "nearby_preference": "Ưu tiên địa điểm gần",
+        "food_focus": "Ưu tiên ẩm thực",
+    }
+
+    pretty_value_map = {
+        "gia_dinh": "Gia đình",
+        "ban_be": "Bạn bè / nhóm",
+        "cap_doi": "Cặp đôi",
+        "mot_minh": "Một mình",
+        "thap": "Ít đông / yên tĩnh",
+        "cao": "Đông vui / sôi động",
+        "cuoi_tuan": "Cuối tuần",
+        "ngay_thuong": "Ngày thường",
+        "dip_le": "Dịp lễ",
+        "mat": "Mát mẻ",
+        "nang_dep": "Nắng đẹp",
+        "kho_rao": "Khô ráo",
+    }
+
+    for key, value in prefs.items():
+        label = mapping.get(key, key)
+        if value is True:
+            lines.append(f"- {label}")
+        else:
+            pretty_value = pretty_value_map.get(str(value), value)
+            lines.append(f"- {label}: {pretty_value}")
+
+    return "\n".join(lines)
+
+
+def build_context_from_payload(question: str, payload: dict, current_page: str, analysis: dict | None = None, memory: dict | None = None) -> str:
+    analysis = analysis or analyze_user_query(question, payload)
+    relevant_docs = retrieve_relevant_documents(
+        question=question,
+        payload=payload,
+        analysis=analysis,
+        memory=memory,
+        top_k=8,
+    )
 
     lines = []
     lines.append(f"Trang hiện tại: {current_page}")
     lines.append(f"Tổng số địa điểm trong hệ thống: {len(payload.get('places', []))}")
     lines.append(f"Tổng số lịch trình trong hệ thống: {len(payload.get('routes', []))}")
+    lines.append(f"Tổng số tư liệu AI: {len(payload.get('documents', []))}")
     lines.append("")
 
-    if top_places:
-        lines.append("ĐỊA ĐIỂM LIÊN QUAN:")
-        for i, p in enumerate(top_places, 1):
-            highlights = p.get("highlights", [])
-            if not isinstance(highlights, list):
-                highlights = []
+    lines.append("PHÂN TÍCH CÂU HỎI:")
+    lines.append(f"- Intent: {analysis.get('intent', 'general')}")
+    lines.append(f"- Địa điểm nhận diện: {', '.join(analysis.get('entities', {}).get('places', [])) or 'Không rõ'}")
+    lines.append(f"- Khu vực nhận diện: {', '.join(analysis.get('entities', {}).get('areas', [])) or 'Không rõ'}")
+    lines.append(f"- Điểm đến lịch trình: {', '.join(analysis.get('entities', {}).get('route_to', [])) or 'Không rõ'}")
+    lines.append("")
 
+    lines.append("NGỮ CẢNH NGƯỜI DÙNG ĐANG ĐƯỢC GHI NHỚ:")
+    lines.append(_format_preferences_for_prompt(memory, analysis))
+    lines.append("")
+
+    if relevant_docs:
+        lines.append("TÀI LIỆU LIÊN QUAN THEO NGỮ NGHĨA:")
+        for i, doc in enumerate(relevant_docs, 1):
+            metadata = doc.get("metadata", {}) or {}
+            content = str(doc.get("content", "")).strip()
+            short_content = content[:320].rsplit(" ", 1)[0] + "..." if len(content) > 320 else content
             lines.append(
-                f"{i}. Tên: {p.get('name', 'Đang cập nhật')} | "
-                f"Khu vực: {p.get('area', 'Đang cập nhật')} | "
-                f"Loại hình: {p.get('category', 'Đang cập nhật')} | "
-                f"Mùa đẹp: {p.get('season', 'Đang cập nhật')} | "
-                f"Thời điểm đẹp: {p.get('best_time', 'Đang cập nhật')} | "
-                f"Mô tả ngắn: {p.get('short_desc', 'Đang cập nhật')} | "
-                f"Nổi bật: {', '.join(highlights[:5]) if highlights else 'Đang cập nhật'}"
+                f"{i}. Loại: {doc.get('doc_type', 'khac')} | "
+                f"Tiêu đề: {doc.get('title', 'Đang cập nhật')} | "
+                f"Khu vực: {metadata.get('area', metadata.get('to', 'Đang cập nhật'))} | "
+                f"Danh mục: {metadata.get('category', 'Đang cập nhật')} | "
+                f"Nội dung: {short_content}"
             )
-        lines.append("")
-
-    if top_routes:
-        lines.append("LỊCH TRÌNH LIÊN QUAN:")
-        for i, r in enumerate(top_routes, 1):
-            lines.append(
-                f"{i}. Từ: {r.get('from', 'Đang cập nhật')} | "
-                f"Đến: {r.get('to', 'Đang cập nhật')} | "
-                f"Loại hình: {r.get('category', 'Đang cập nhật')} | "
-                f"Thời gian: {r.get('time_estimate', 'Đang cập nhật')} | "
-                f"Quãng đường: {r.get('distance_km', 'Đang cập nhật')} | "
-                f"Phương tiện: {r.get('transport_name', 'Đang cập nhật')} | "
-                f"Giá xe: {r.get('transport_price', 'Đang cập nhật')} | "
-                f"Vé tham quan: {r.get('ticket_price', 'Đang cập nhật')} | "
-                f"Khách sạn: {r.get('hotel_name', 'Đang cập nhật')} | "
-                f"Giá khách sạn: {r.get('hotel_price', 'Đang cập nhật')} | "
-                f"Tổng chi phí: {r.get('total_price', 'Đang cập nhật')} | "
-                f"Ghi chú: {r.get('note', 'Đang cập nhật')}"
-            )
-        lines.append("")
-
-    if not top_places and not top_routes:
-        lines.append("Không tìm thấy mục nào khớp mạnh trong dữ liệu nội bộ.")
-        lines.append("Khi trả lời, hãy nói rõ dữ liệu hệ thống chưa có thông tin đủ cụ thể.")
+    else:
+        lines.append("Không tìm thấy tài liệu nội bộ đủ gần theo ngữ nghĩa.")
+        lines.append("Khi trả lời, hãy nói rõ dữ liệu hệ thống chưa đủ cụ thể.")
 
     return "\n".join(lines)
+
 
 def build_history_text(messages: list[dict], limit: int = 8) -> str:
     recent = messages[-limit:] if messages else []
@@ -268,84 +1269,15 @@ def build_history_text(messages: list[dict], limit: int = 8) -> str:
 
     return "\n".join(lines) if lines else "Chưa có lịch sử hội thoại."
 
-def ask_gemini(user_message: str, payload: dict, current_page: str, messages: list[dict]) -> str:
-    route_mode = route_question(user_message)
 
-    if route_mode == "internal":
-        api_key = get_gemini_api_key()
-        if not api_key:
-            return "Bạn chưa cấu hình GEMINI_API_KEY."
-
-        try:
-            client = genai.Client(api_key=api_key)
-
-            context_text = build_context_from_payload(user_message, payload, current_page)
-            history_text = build_history_text(messages, limit=8)
-
-            prompt = f"""
-DỮ LIỆU NỘI BỘ:
-{context_text}
-
-LỊCH SỬ HỘI THOẠI GẦN ĐÂY:
-{history_text}
-
-CÂU HỎI MỚI CỦA NGƯỜI DÙNG:
-{user_message}
-""".strip()
-
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=(
-                        "Bạn là Lao Cai Heritage AI, trợ lý du lịch thông minh cho website giới thiệu "
-                        "địa điểm, lịch trình và văn hóa Lào Cai. "
-                        "Chỉ ưu tiên dữ liệu nội bộ được cung cấp trong prompt. "
-                        "Không bịa thông tin. Nếu dữ liệu hệ thống chưa có, hãy nói rõ là chưa có trong hệ thống. "
-                        "Trả lời bằng tiếng Việt, ngắn gọn, đúng trọng tâm, dễ hiểu. "
-                        "Ưu tiên trả lời theo dạng tư vấn thực tế cho khách du lịch. "
-                        "Khi phù hợp, gợi ý thêm 1 đến 2 câu hỏi tiếp theo. "
-                        "Không nói rằng bạn là Gemini hay Google."
-                    ),
-                    temperature=0.35,
-                    max_output_tokens=500,
-                ),
-            )
-
-            answer = (response.text or "").strip()
-            if answer:
-                return answer
-
-            return "Mình chưa tạo được câu trả lời phù hợp. Bạn hãy hỏi lại ngắn gọn hơn."
-
-        except Exception as e:
-            error_text = str(e)
-
-            if "429" in error_text or "RESOURCE_EXHAUSTED" in error_text.upper():
-                return "Gemini đang báo hết quota hoặc vượt giới hạn tốc độ ở API key hiện tại."
-
-            if "API key" in error_text or "api_key" in error_text.lower():
-                return "API key Gemini chưa đúng hoặc chưa được cấp quyền."
-
-            return f"Lỗi Gemini: {error_text}"
-
-    if route_mode in ["search", "hybrid"]:
-        return ask_gemini_search(
-            user_message=user_message,
-            payload=payload,
-            current_page=current_page,
-            messages=messages
-        )
-
-    return "Mình chưa xác định được kiểu câu hỏi."
-    
-
-def route_question(user_message: str) -> str:
-    q = normalize_query_text(user_message)
+def route_question(user_message: str, analysis: dict | None = None) -> str:
+    analysis = analysis or analyze_user_query(user_message, CHATBOT_PAYLOAD)
+    q = analysis.get("normalized_question", normalize_query_text(user_message))
+    intent = analysis.get("intent", "general")
 
     search_keywords = [
         "hom nay", "hien tai", "moi nhat", "gan day", "tin tuc", "thoi tiet",
-        "su kien", "le hoi", "gia ve", "gio mo cua", "lich mo cua", "cap nhat",
+        "su kien", "gia ve", "gio mo cua", "lich mo cua", "cap nhat",
         "nam nay", "thang nay", "tuan nay"
     ]
 
@@ -354,16 +1286,8 @@ def route_question(user_message: str) -> str:
         "an gi", "khach san nao", "quan an", "cafe", "gan", "xung quanh"
     ]
 
-    internal_score = 0
-    for item in CHATBOT_PAYLOAD.get("places", []):
-        name_norm = normalize_query_text(item.get("name", ""))
-        if name_norm and name_norm in q:
-            internal_score += 2
-
-    for item in CHATBOT_PAYLOAD.get("routes", []):
-        to_norm = normalize_query_text(item.get("to", ""))
-        if to_norm and to_norm in q:
-            internal_score += 2
+    if intent == "need_web":
+        return "search"
 
     if any(k in q for k in search_keywords):
         return "search"
@@ -371,25 +1295,18 @@ def route_question(user_message: str) -> str:
     if any(k in q for k in external_keywords):
         return "search"
 
-    if internal_score > 0:
+    if analysis.get("entities", {}).get("places") or analysis.get("entities", {}).get("route_to"):
+        return "internal"
+
+    if intent in ["goi_y", "chi_phi", "lich_trinh", "thoi_diem", "van_hoa"]:
         return "internal"
 
     return "hybrid"
 
 
-def ask_gemini_search(user_message: str, payload: dict, current_page: str, messages: list[dict]) -> str:
-    api_key = get_gemini_api_key()
-    if not api_key:
-        return "Bạn chưa cấu hình GEMINI_API_KEY."
-
-    try:
-        client = genai.Client(api_key=api_key)
-
-        context_text = build_context_from_payload(user_message, payload, current_page)
-        history_text = build_history_text(messages, limit=8)
-
-        prompt = f"""
-DỮ LIỆU NỘI BỘ THAM KHẢO:
+def _build_gemini_prompt(user_message: str, current_page: str, context_text: str, history_text: str) -> str:
+    return f"""
+DỮ LIỆU NỘI BỘ:
 {context_text}
 
 LỊCH SỬ HỘI THOẠI GẦN ĐÂY:
@@ -398,42 +1315,82 @@ LỊCH SỬ HỘI THOẠI GẦN ĐÂY:
 CÂU HỎI MỚI CỦA NGƯỜI DÙNG:
 {user_message}
 
-YÊU CẦU:
-- Ưu tiên dữ liệu nội bộ nếu đã có.
-- Nếu dữ liệu nội bộ chưa đủ hoặc câu hỏi cần thông tin mới, hãy dùng Google Search để bổ sung.
-- Phân biệt rõ:
-  1. Thông tin từ hệ thống
-  2. Thông tin tham khảo từ web
-- Không bịa chi tiết cụ thể.
+YÊU CẦU TRẢ LỜI:
+- Ưu tiên dùng dữ liệu nội bộ và ngữ cảnh người dùng đã được ghi nhớ.
+- Không trả lời kiểu khớp từ khóa máy móc; hãy hiểu theo ý định và nhu cầu thực tế.
+- Nếu dữ liệu hệ thống chưa đủ, nói rõ là chưa có đủ trong hệ thống.
+- Trả lời bằng tiếng Việt, tự nhiên, rõ ràng, hữu ích.
 """.strip()
 
-        grounding_tool = types.Tool(
-            google_search=types.GoogleSearch()
+
+def ask_gemini(user_message: str, payload: dict, current_page: str, messages: list[dict]) -> str:
+    api_key = get_gemini_api_key()
+    if not api_key:
+        return "Bạn chưa cấu hình GEMINI_API_KEY."
+
+    current_user = st.session_state.get("auth_user", {}) or {}
+    current_user_id = current_user.get("id")
+
+    analysis = analyze_user_query(user_message, payload, messages)
+    memory_before = get_user_memory_state(current_user_id) if current_user_id else {"preferences": {}}
+    route_mode = route_question(user_message, analysis=analysis)
+
+    personalized_hint = ""
+    if analysis.get("intent") == "goi_y":
+        personalized_hint = build_personalized_recommendation_text(
+            payload=payload,
+            analysis=analysis,
+            memory=memory_before
+    )
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        context_text = build_context_from_payload(
+            question=user_message,
+            payload=payload,
+            current_page=current_page,
+            analysis=analysis,
+            memory=memory_before,
         )
+        history_text = build_history_text(messages, limit=8)
+        prompt = _build_gemini_prompt(user_message, current_page, context_text, history_text)
+
+        if personalized_hint:
+            prompt += "\n\nGỢI Ý CÁ NHÂN HÓA NỘI BỘ:\n" + personalized_hint
+
+        config_kwargs = {
+            "system_instruction": (
+                "Bạn là Lao Cai Heritage AI, trợ lý du lịch thông minh cho website giới thiệu "
+                "địa điểm, lịch trình và văn hóa Lào Cai. "
+                "Bạn phải ưu tiên hiểu ý định câu hỏi, sở thích người dùng và dữ liệu nội bộ theo ngữ nghĩa. "
+                "Không bịa thông tin. Nếu dữ liệu hệ thống chưa có, hãy nói rõ là chưa có trong hệ thống. "
+                "Trả lời bằng tiếng Việt, ngắn gọn, đúng trọng tâm, dễ hiểu. "
+                "Ưu tiên trả lời theo dạng tư vấn thực tế cho khách du lịch. "
+                "Khi phù hợp, gợi ý thêm 1 đến 2 câu hỏi tiếp theo. "
+                "Không nói rằng bạn là Gemini hay Google."
+            ),
+            "temperature": 0.35,
+            "max_output_tokens": 650,
+        }
+
+        if route_mode in ["search", "hybrid"]:
+            grounding_tool = types.Tool(google_search=types.GoogleSearch())
+            config_kwargs["tools"] = [grounding_tool]
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=GEMINI_MODEL,
             contents=prompt,
-            config=types.GenerateContentConfig(
-                tools=[grounding_tool],
-                system_instruction=(
-                    "Bạn là Lao Cai Heritage AI, trợ lý du lịch thông minh cho website du lịch Lào Cai. "
-                    "Khi có dữ liệu nội bộ trong prompt, hãy ưu tiên dùng trước. "
-                    "Khi cần thông tin mới hoặc ngoài hệ thống, hãy dùng Google Search. "
-                    "Trả lời bằng tiếng Việt, ngắn gọn, dễ hiểu, thực tế. "
-                    "Nếu có thông tin lấy từ web, ghi rõ đó là thông tin tham khảo mới cập nhật. "
-                    "Không nói rằng bạn là Gemini hay Google."
-                ),
-                temperature=0.35,
-                max_output_tokens=700,
-            ),
+            config=types.GenerateContentConfig(**config_kwargs),
         )
 
         answer = (response.text or "").strip()
         if answer:
+            if current_user_id:
+                update_user_memory_state(current_user_id, analysis)
             return answer
 
-        return "Mình chưa lấy được câu trả lời phù hợp từ web. Bạn hãy hỏi cụ thể hơn."
+        return "Mình chưa tạo được câu trả lời phù hợp. Bạn hãy hỏi lại ngắn gọn hơn."
 
     except Exception as e:
         error_text = str(e)
@@ -444,7 +1401,8 @@ YÊU CẦU:
         if "API key" in error_text or "api_key" in error_text.lower():
             return "API key Gemini chưa đúng hoặc chưa được cấp quyền."
 
-        return f"Lỗi Gemini Search: {error_text}"
+        return f"Lỗi Gemini: {error_text}"
+
 
 hero_home_src = image_to_data_uri([
     "kho_anh/chinh.png",
@@ -554,6 +1512,27 @@ header {{visibility: hidden;}}
     height: 3px;
     border-radius: 999px;
     background: #1565c0;
+}}
+            
+.nav-user{{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px !important;
+    border-radius:999px;
+    background:#f1f5f9;
+    color:#0f172a !important;
+    border:1px solid #dbe4ef;
+    font-weight:800 !important;
+}}
+
+.nav-user:hover{{
+    background:#e2e8f0;
+    color:#0f172a !important;
+}}
+
+.nav-user::after{{
+    display:none !important;
 }}
 
 /* Hero */
@@ -905,6 +1884,506 @@ header {{visibility: hidden;}}
 </style>
 """, unsafe_allow_html=True)
 
+def render_auth_page():
+    auth_bg_src = image_to_data_uri([
+        "kho_anh/trang_chu/chinh.png",
+        "kho_anh/trang_chu/chinh.jpg",
+        "kho_anh/trang_chu/chinh.jpeg",
+        "kho_anh/trang_chu/chinh.webp",
+        "kho_anh/chinh.png",
+        "kho_anh/chinh.jpg",
+        "kho_anh/chinh.jpeg",
+        "kho_anh/chinh.webp"
+    ])
+
+    bg_css = f"background-image: url('{auth_bg_src}');" if auth_bg_src else """
+    background:
+        radial-gradient(circle at 20% 20%, rgba(59,255,136,0.18), transparent 26%),
+        radial-gradient(circle at 80% 30%, rgba(0,255,170,0.14), transparent 25%),
+        radial-gradient(circle at 50% 78%, rgba(0,200,255,0.12), transparent 28%),
+        linear-gradient(135deg, #03140f 0%, #0a251d 55%, #071814 100%);
+    """
+
+    login_url = build_app_url("login")
+    signup_url = build_app_url("signup")
+
+    st.markdown(f"""
+    <style>
+    .block-container {{
+        padding-top: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: 100% !important;
+    }}
+
+    .auth-screen {{
+        min-height: 100vh;
+        width: 100%;
+        {bg_css}
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        position: relative;
+        overflow: hidden;
+    }}
+
+    .auth-screen::before {{
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.38) 100%);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+    }}
+
+    .auth-center {{
+        position: relative;
+        z-index: 2;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+    }}
+
+    .auth-box {{
+        width: 100%;
+        max-width: 320px;
+        padding: 28px 20px 20px 20px;
+        border-radius: 22px;
+        background: rgba(8, 36, 28, 0.38);
+        border: 1px solid rgba(255,255,255,0.16);
+        box-shadow: 0 18px 40px rgba(0,0,0,0.30);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }}
+
+    .auth-title {{
+        font-size: 18px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 10px;
+        line-height: 1.2;
+    }}
+
+    .auth-sub {{
+        font-size: 12px;
+        line-height: 1.6;
+        color: rgba(255,255,255,0.78);
+        margin-bottom: 18px;
+    }}
+
+    .auth-btn {{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 44px;
+        border-radius: 999px;
+        text-decoration: none !important;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        box-sizing: border-box;
+        transition: all 0.18s ease;
+    }}
+
+    .auth-btn-signin {{
+        background: linear-gradient(180deg, #6ad638 0%, #56c92a 100%);
+        color: #ffffff !important;
+        margin-bottom: 12px;
+        box-shadow: 0 10px 22px rgba(95, 214, 42, 0.28);
+    }}
+
+    .auth-btn-signin:hover {{
+        transform: translateY(-1px);
+    }}
+
+    .auth-btn-signup {{
+        background: transparent;
+        color: #ffffff !important;
+        border: 1px solid rgba(255,255,255,0.45);
+    }}
+
+    .auth-btn-signup:hover {{
+        background: rgba(255,255,255,0.05);
+        transform: translateY(-1px);
+    }}
+    </style>
+
+    <div class="auth-screen">
+        <div class="auth-center">
+            <div class="auth-box">
+                <div class="auth-title">Hello!</div>
+                <div class="auth-sub">
+                    Đăng nhập hoặc tạo tài khoản để lưu lịch sử sử dụng theo từng người dùng.
+                </div>
+                <a class="auth-btn auth-btn-signin" href="{login_url}" target="_self">SIGN IN</a>
+                <a class="auth-btn auth-btn-signup" href="{signup_url}" target="_self">SIGN UP</a>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_login_form_page():
+    auth_bg_src = image_to_data_uri([
+        "kho_anh/trang_chu/chinh.png",
+        "kho_anh/trang_chu/chinh.jpg",
+        "kho_anh/trang_chu/chinh.jpeg",
+        "kho_anh/trang_chu/chinh.webp",
+        "kho_anh/chinh.png",
+        "kho_anh/chinh.jpg",
+        "kho_anh/chinh.jpeg",
+        "kho_anh/chinh.webp"
+    ])
+
+    bg_css = f"background-image: url('{auth_bg_src}');" if auth_bg_src else """
+    background:
+        radial-gradient(circle at 20% 20%, rgba(59,255,136,0.18), transparent 26%),
+        radial-gradient(circle at 80% 30%, rgba(0,255,170,0.14), transparent 25%),
+        radial-gradient(circle at 50% 78%, rgba(0,200,255,0.12), transparent 28%),
+        linear-gradient(135deg, #03140f 0%, #0a251d 55%, #071814 100%);
+    """
+
+    st.markdown(f"""
+    <style>
+    .stApp {{
+        {bg_css}
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }}
+
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.28);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        z-index: 0;
+        pointer-events: none;
+    }}
+
+    .block-container {{
+        position: relative;
+        z-index: 1;
+        padding-top: 40px !important;
+        padding-bottom: 40px !important;
+        max-width: 100% !important;
+    }}
+
+    .auth-card-wrap {{
+        padding: 10px;
+        border-radius: 24px;
+        background: rgba(8, 36, 28, 0.38);
+        border: 1px solid rgba(255,255,255,0.16);
+        box-shadow: 0 18px 40px rgba(0,0,0,0.30);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }}
+
+    .auth-back {{
+        display: inline-block;
+        margin-bottom: 12px;
+        color: rgba(255,255,255,0.82) !important;
+        text-decoration: none !important;
+        font-size: 14px;
+        font-weight: 700;
+    }}
+
+    .auth-title {{
+        font-size: 22px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 8px;
+    }}
+
+    .auth-sub {{
+        font-size: 15px;
+        line-height: 1.6;
+        color: rgba(255,255,255,0.82);
+        margin-bottom: 16px;
+    }}
+
+    div[data-testid="stForm"] {{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }}
+
+    div[data-testid="stTextInput"] label {{
+        display: none !important;
+    }}
+
+    div[data-testid="stTextInput"] input {{
+        height: 44px !important;
+        min-height: 44px !important;
+        border-radius: 999px !important;
+        border: 1.2px solid rgba(255,255,255,0.52) !important;
+        background: rgba(255,255,255,0.90) !important;
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        caret-color: #000000 !important;
+        font-size: 14px !important;
+        padding: 0 16px !important;
+        box-shadow: none !important;
+    }}
+
+    div[data-testid="stTextInput"] input::placeholder {{
+        color: rgba(0,0,0,0.55) !important;
+        -webkit-text-fill-color: rgba(0,0,0,0.55) !important;
+    }}
+
+    div[data-testid="stFormSubmitButton"] button {{
+        width: 100% !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        border-radius: 999px !important;
+        border: none !important;
+        background: linear-gradient(180deg, #6ad638 0%, #56c92a 100%) !important;
+        color: #ffffff !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.03em !important;
+    }}
+
+    div[data-testid="stAlert"] {{
+        border-radius: 14px !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+    left, center, right = st.columns([1.2, 1.8, 1.2])
+
+    with center:
+        st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
+        st.markdown(
+            f'<a class="auth-back" href="{build_app_url("home")}" target="_self">← Quay lại</a>',
+            unsafe_allow_html=True
+        )
+        st.markdown('<div class="auth-title">Sign in</div>', unsafe_allow_html=True)
+        st.markdown('<div class="auth-sub">Đăng nhập để tiếp tục sử dụng hệ thống.</div>', unsafe_allow_html=True)
+
+        with st.form("login_form", clear_on_submit=False):
+            login_username = st.text_input(
+                "Tên đăng nhập",
+                placeholder="Tên đăng nhập",
+                key="login_username"
+            )
+            login_password = st.text_input(
+                "Mật khẩu",
+                type="password",
+                placeholder="Mật khẩu",
+                key="login_password"
+            )
+            login_submit = st.form_submit_button("SIGN IN", use_container_width=True)
+
+        if login_submit:
+            user = verify_user(login_username, login_password)
+            if not user:
+                st.error("Sai tên đăng nhập hoặc mật khẩu.")
+            else:
+                sid = create_session(user["id"])
+                st.session_state.auth_user = user
+                st.session_state.auth_sid = sid
+                st.query_params.clear()
+                st.query_params["page"] = "home"
+                st.query_params["sid"] = sid
+                st.rerun()
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+def render_signup_form_page():
+    auth_bg_src = image_to_data_uri([
+        "kho_anh/trang_chu/chinh.png",
+        "kho_anh/trang_chu/chinh.jpg",
+        "kho_anh/trang_chu/chinh.jpeg",
+        "kho_anh/trang_chu/chinh.webp",
+        "kho_anh/chinh.png",
+        "kho_anh/chinh.jpg",
+        "kho_anh/chinh.jpeg",
+        "kho_anh/chinh.webp"
+    ])
+
+    bg_css = f"background-image: url('{auth_bg_src}');" if auth_bg_src else """
+    background:
+        radial-gradient(circle at 20% 20%, rgba(59,255,136,0.18), transparent 26%),
+        radial-gradient(circle at 80% 30%, rgba(0,255,170,0.14), transparent 25%),
+        radial-gradient(circle at 50% 78%, rgba(0,200,255,0.12), transparent 28%),
+        linear-gradient(135deg, #03140f 0%, #0a251d 55%, #071814 100%);
+    """
+
+    st.markdown(f"""
+    <style>
+    .stApp {{
+        {bg_css}
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }}
+
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.28);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        z-index: 0;
+        pointer-events: none;
+    }}
+
+    .block-container {{
+        position: relative;
+        z-index: 1;
+        padding-top: 40px !important;
+        padding-bottom: 40px !important;
+        max-width: 100% !important;
+    }}
+
+    .auth-card-wrap {{
+        padding: 10px;
+        border-radius: 24px;
+        background: rgba(8, 36, 28, 0.38);
+        border: 1px solid rgba(255,255,255,0.16);
+        box-shadow: 0 18px 40px rgba(0,0,0,0.30);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }}
+
+    .auth-back {{
+        display: inline-block;
+        margin-bottom: 12px;
+        color: rgba(255,255,255,0.82) !important;
+        text-decoration: none !important;
+        font-size: 14px;
+        font-weight: 700;
+    }}
+
+    .auth-title {{
+        font-size: 22px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 8px;
+    }}
+
+    .auth-sub {{
+        font-size: 15px;
+        line-height: 1.6;
+        color: rgba(255,255,255,0.82);
+        margin-bottom: 16px;
+    }}
+
+    div[data-testid="stForm"] {{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }}
+
+    div[data-testid="stTextInput"] label {{
+        display: none !important;
+    }}
+
+    div[data-testid="stTextInput"] input {{
+        height: 44px !important;
+        min-height: 44px !important;
+        border-radius: 999px !important;
+        border: 1.2px solid rgba(255,255,255,0.52) !important;
+        background: rgba(255,255,255,0.90) !important;
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        caret-color: #000000 !important;
+        font-size: 14px !important;
+        padding: 0 16px !important;
+        box-shadow: none !important;
+    }}
+
+    div[data-testid="stTextInput"] input::placeholder {{
+        color: rgba(0,0,0,0.55) !important;
+        -webkit-text-fill-color: rgba(0,0,0,0.55) !important;
+    }}
+
+    div[data-testid="stFormSubmitButton"] button {{
+        width: 100% !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        border-radius: 999px !important;
+        border: 1px solid rgba(255,255,255,0.45) !important;
+        background: transparent !important;
+        color: #ffffff !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.03em !important;
+    }}
+
+    div[data-testid="stAlert"] {{
+        border-radius: 14px !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+    left, center, right = st.columns([1.2, 1.8, 1.2])
+
+    with center:
+        st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
+        st.markdown(
+            f'<a class="auth-back" href="{build_app_url("home")}" target="_self">← Quay lại</a>',
+            unsafe_allow_html=True
+        )
+        st.markdown('<div class="auth-title">Sign up</div>', unsafe_allow_html=True)
+        st.markdown('<div class="auth-sub">Tạo tài khoản mới để lưu lịch sử riêng.</div>', unsafe_allow_html=True)
+
+        with st.form("register_form", clear_on_submit=False):
+            reg_username = st.text_input(
+                "Tạo tên đăng nhập",
+                placeholder="Tạo tên đăng nhập",
+                key="reg_username"
+            )
+            reg_password = st.text_input(
+                "Tạo mật khẩu",
+                type="password",
+                placeholder="Tạo mật khẩu",
+                key="reg_password"
+            )
+            reg_password_2 = st.text_input(
+                "Nhập lại mật khẩu",
+                type="password",
+                placeholder="Nhập lại mật khẩu",
+                key="reg_password_2"
+            )
+            reg_submit = st.form_submit_button("SIGN UP", use_container_width=True)
+
+        if reg_submit:
+            if reg_password != reg_password_2:
+                st.error("Mật khẩu nhập lại chưa khớp.")
+            else:
+                ok, msg = create_user(reg_username, reg_password)
+                if ok:
+                    st.success("Đăng ký thành công. Bạn hãy quay lại để đăng nhập.")
+                else:
+                    st.error(msg)
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+auth_pages = {"home", "login", "signup"}
+
+if "auth_user" not in st.session_state:
+    if page == "login":
+        render_login_form_page()
+    elif page == "signup":
+        render_signup_form_page()
+    else:
+        render_auth_page()
+    st.stop()
+
 navbar_logo_src = image_to_data_uri([
     "assets/anime_teamtrangchu1.png",
     "anime_teamtrangchu1.png",
@@ -917,18 +2396,23 @@ navbar_logo_src = image_to_data_uri([
 ])
 
 # Topbar
+current_username = escape(st.session_state["auth_user"]["username"])
+
 navbar_html = dedent(f"""
 <div class="navbar">
-    <a class="logo" href="?page=home" target="_self">
+    <a class="logo" href="{build_app_url('home')}" target="_self">
         <img src="{navbar_logo_src}" alt="Logo">
         <span class="logo-text">Lao Cai <span>Heritage AI</span></span>
     </a>
     <div class="nav-links">
-        <a href="?page=home" target="_self" class="{'active' if page == 'home' else ''}">Trang chủ</a>
-        <a href="?page=diemden" target="_self" class="{'active' if page in ['diemden', 'diemden_detail'] else ''}">Điểm đến</a>
-        <a href="?page=lichtrinh" target="_self" class="{'active' if page in ['lichtrinh', 'lichtrinh_detail'] else ''}">Lịch trình</a>
-        <a href="?page=chatbot" target="_self" class="{'active' if page == 'chatbot' else ''}">Chatbot AI</a>
-        <a href="?page=gioithieu" target="_self" class="{'active' if page == 'gioithieu' else ''}">Về dự án</a>
+        <a href="{build_app_url('home')}" target="_self" class="{'active' if page == 'home' else ''}">Trang chủ</a>
+        <a href="{build_app_url('diemden')}" target="_self" class="{'active' if page in ['diemden', 'diemden_detail'] else ''}">Điểm đến</a>
+        <a href="{build_app_url('lichtrinh')}" target="_self" class="{'active' if page in ['lichtrinh', 'lichtrinh_detail'] else ''}">Lịch trình</a>
+        <a href="{build_app_url('chatbot')}" target="_self" class="{'active' if page == 'chatbot' else ''}">Chatbot</a>
+        <a href="{build_app_url('gioithieu')}" target="_self" class="{'active' if page == 'gioithieu' else ''}">Về dự án</a>
+        <a href="{build_app_url('lehoi_langnghe')}" target="_self" class="{'active' if page == 'lehoi_langnghe' else ''}">Lễ hội - Làng nghề</a>
+        <a href="{build_app_url('congdong')}" target="_self" class="{'active' if page == 'congdong' else ''}">Cộng đồng</a>
+        <a href="{build_app_url('caidat')}" target="_self" class="nav-user {'active' if page == 'caidat' else ''}">👤 {current_username}</a>
     </div>
 </div>
 """)
@@ -3797,9 +5281,12 @@ elif page == "lichtrinh":
                             <div class="lt-back-badge">{category}</div>
                             <div class="lt-back-route">{route_text}</div>
                             <div class="lt-back-desc">{hover_desc}</div>
-                            <button class="lt-view-btn" onclick="openLichTrinhDetail('{slug_value}')">
-                                Xem chi tiết
-                            </button>
+                            <a class="lt-view-btn"
+                                href="{build_app_url('lichtrinh_detail', slug=slug_value)}"
+                                target="_blank"
+                                rel="noopener noreferrer">
+                                    Xem chi tiết
+                            </a>
                         </div>
                     </div>
 
@@ -3810,23 +5297,6 @@ elif page == "lichtrinh":
         cards_html += "</div>"
 
         cards_html += """
-        <script>
-        function openLichTrinhDetail(slug){
-            try{
-                const baseUrl = document.referrer
-                    ? new URL(document.referrer)
-                    : new URL(window.parent.location.href);
-
-                baseUrl.searchParams.set("page", "lichtrinh_detail");
-                baseUrl.searchParams.set("slug", slug);
-                baseUrl.hash = "";
-
-                window.open(baseUrl.toString(), "_blank", "noopener,noreferrer");
-            }catch(err){
-                window.open("?page=lichtrinh_detail&slug=" + encodeURIComponent(slug), "_blank", "noopener,noreferrer");
-            }
-        }
-        </script>
         """
 
         rows = math.ceil(result_count / 3) if result_count else 1
@@ -4768,6 +6238,14 @@ elif page == "diemden":
             overflow: hidden;
         }}
 
+        @media (max-width: 768px) {{
+            .dd-hero-section {{
+                height: 210px !important;
+                background-position: center center !important;
+                border-radius: 0 !important;
+            }}
+        }}
+
         .dd-hero-section::after{{
             content: "";
             position: absolute;
@@ -4974,19 +6452,61 @@ elif page == "diemden":
         }}
     }}
 
-    @media (max-width: 640px){{
+    @media (max-width: 768px){{
         .dd-benefit-wrap{{
-            padding: 0 2px;
+            margin: 18px auto 6px auto;
+            padding: 0 10px;
         }}
 
         .dd-benefit-title{{
-            font-size:24px;
+            font-size: 20px;
+            line-height: 1.35;
+            margin-bottom: 8px;
+        }}
+
+        .dd-benefit-line{{
+            width: 72px;
+            height: 3px;
+            margin: 0 auto 12px auto;
+        }}
+
+        .dd-benefit-desc{{
+            font-size: 13px;
+            line-height: 1.7;
+            margin: 0 auto 18px auto;
+            max-width: 100%;
         }}
 
         .dd-benefit-grid{{
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }}
+
+        .dd-benefit-card{{
+            border-radius: 16px;
+            padding: 14px 10px;
+        }}
+
+        .dd-benefit-icon{{
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 10px auto;
+            padding: 10px;
+        }}
+
+        .dd-benefit-name{{
+            font-size: 14px;
+            margin-bottom: 6px;
+            line-height: 1.35;
+        }}
+
+        .dd-benefit-text{{
+            font-size: 12px;
+            line-height: 1.6;
         }}
     }}
+                    
+                    
     </style>
 
     <div class="dd-benefit-wrap">
@@ -5021,6 +6541,36 @@ elif page == "diemden":
                 <div class="dd-benefit-text">Gợi ý lịch trình cá nhân hóa, hỗ trợ hỏi đáp nhanh chóng – giúp bạn khám phá Lào Cai thuận tiện và hiệu quả hơn bao giờ hết.</div>
             </div>
         </div>
+
+        <script>
+        function updateFrameHeight() {{
+            const height = Math.max(
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight
+            );
+
+            window.parent.postMessage({{
+                type: "streamlit:setFrameHeight",
+                height: height + 20
+            }}, "*");
+        }}
+
+        window.addEventListener("load", () => {{
+            setTimeout(updateFrameHeight, 120);
+            setTimeout(updateFrameHeight, 400);
+        }});
+
+        window.addEventListener("resize", () => {{
+            setTimeout(updateFrameHeight, 120);
+        }});
+
+        const resizeObserver = new ResizeObserver(() => {{
+            setTimeout(updateFrameHeight, 80);
+        }});
+
+        resizeObserver.observe(document.body);
+        </script>
+        
     </div>
     """, height=500, scrolling=False)
 
@@ -5028,7 +6578,7 @@ elif page == "diemden":
     <div style="
         max-width:1320px;
         margin: 8px auto 10px auto;
-        padding: 0 8px;
+        padding: 0 12px;
         box-sizing:border-box;
     ">
         <div style="
@@ -5040,7 +6590,7 @@ elif page == "diemden":
         ">
             <div>
                 <div style="
-                    font-size:30px;
+                    font-size:24px;
                     font-weight:900;
                     color:#111827;
                     line-height:1.2;
@@ -5049,7 +6599,7 @@ elif page == "diemden":
                     Danh sách điểm đến
                 </div>
                 <div style="
-                    font-size:16px;
+                    font-size:14px;
                     color:#64748b;
                     line-height:1.7;
                 ">
@@ -5388,7 +6938,7 @@ elif page == "diemden":
 
             slug_value = safe_text(item.get("slug"), "dang-cap-nhat")
             slug_raw = str(item.get("slug", "")).strip()
-            detail_href = f"?page=diemden_detail&slug={quote(slug_raw)}"    
+            detail_href = build_app_url("diemden_detail", slug=quote(slug_raw))   
             image_src = card_image_src(item.get("image"))      
 
             cards_html += f"""
@@ -7213,18 +8763,22 @@ elif page == "chatbot":
         "Bạn có thể hỏi về điểm đến, lịch trình, mùa đẹp hoặc chi phí tham khảo."
     )
 
-    if "gemini_messages" not in st.session_state:
-        st.session_state.gemini_messages = [
-            {
-                "role": "assistant",
-                "content": default_bot_message
-            }
-        ]
+    current_user_id = st.session_state["auth_user"]["id"]
+
+    if (
+        "gemini_loaded_user_id" not in st.session_state
+        or st.session_state.gemini_loaded_user_id != current_user_id
+    ):
+        ensure_default_chat_history(current_user_id, default_bot_message)
+        st.session_state.gemini_messages = load_chat_history(current_user_id)
+        st.session_state.gemini_loaded_user_id = current_user_id
 
     def send_chat_message(user_text: str):
         clean_user_text = str(user_text or "").strip()
         if not clean_user_text:
             return
+
+        save_chat_message(current_user_id, "user", clean_user_text)
 
         st.session_state.gemini_messages.append({
             "role": "user",
@@ -7237,6 +8791,8 @@ elif page == "chatbot":
             current_page=page,
             messages=st.session_state.gemini_messages[:-1]
         )
+
+        save_chat_message(current_user_id, "assistant", answer)
 
         st.session_state.gemini_messages.append({
             "role": "assistant",
@@ -8398,6 +9954,7 @@ elif page == "gioithieu":
                     padding: 34px 16px 24px 16px;
                 }}
             }}
+            
         </style>
     </head>
     <body>
@@ -8625,3 +10182,1449 @@ elif page == "gioithieu":
     """
 
     components.html(html, height=2220, scrolling=False)
+
+elif page == "caidat":
+    current_user = get_user_by_id(st.session_state["auth_user"]["id"])
+
+    if not current_user:
+        st.error("Không tìm thấy thông tin tài khoản.")
+        st.stop()
+
+    st.markdown("""
+    <style>
+
+    .settings-title{
+        font-size: 26px;
+        font-weight: 900;
+        color: #111827;
+        margin-bottom: 18px;
+    }
+
+    .settings-card{
+        width: 100%;
+        background:#ffffff;
+        border:1px solid #e5edf6;
+        border-radius:20px;
+        padding:24px;
+        box-shadow:0 14px 32px rgba(15,23,42,0.06);
+        box-sizing: border-box;
+    }
+                
+    div[data-testid="stTabs"] + div{
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .settings-section-title{
+        font-size:16px;
+        font-weight:900;
+        color:#111827;
+        margin-bottom:14px;
+    }
+
+    .settings-box{
+        width: 100%;
+        background:#f8fafc;
+        border:1px solid #e2e8f0;
+        border-radius:14px;
+        padding:16px 18px;
+        margin-bottom:16px;
+        box-sizing: border-box;
+    }
+
+    .settings-label{
+        font-size:13px;
+        font-weight:800;
+        color:#64748b;
+        margin-bottom:8px;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+    }
+
+    .settings-value{
+        font-size:17px;
+        font-weight:700;
+        color:#0f172a;
+        line-height:1.6;
+        word-break:break-word;
+    }
+
+    .settings-note{
+        font-size:13px;
+        color:#64748b;
+        line-height:1.7;
+        margin-top:6px;
+    }
+
+    .settings-action-row{
+        display:flex;
+        justify-content:center;
+        margin-top: 0px;
+    }
+
+    .settings-logout-btn{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-width:160px;
+        height:46px;
+        padding:0 18px;
+        border-radius:12px;
+        background:linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color:#ffffff !important;
+        text-decoration:none !important;
+        font-size:15px;
+        font-weight:800;
+        box-shadow:0 10px 22px rgba(220,38,38,0.18);
+        transition:transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .settings-logout-btn:hover{
+        transform:translateY(-1px);
+        box-shadow:0 14px 26px rgba(220,38,38,0.24);
+        color:#ffffff !important;
+    }
+
+    div[data-testid="stTabs"]{
+        margin-bottom: 0 !important;
+    }
+
+    div[data-testid="stTabs"] > div{
+        max-width: 980px;
+        margin: 0 auto;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+                
+    div[data-testid="stTabs"] [role="tablist"]{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    div[data-testid="stTabs"] [data-baseweb="tab-border"]{
+        display: none !important;
+    }
+                
+
+    div[data-testid="stForm"]{
+        width: 100%;
+        background:#f8fafc !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:14px !important;
+        padding:16px 18px !important;
+        box-shadow:none !important;
+        margin-top:0 !important;
+    }
+
+    div[data-testid="stTextInput"]{
+        width: 100%;
+    }
+
+    div[data-testid="stTextInput"] input{
+        min-height: 48px !important;
+        border-radius: 12px !important;
+        border: 1px solid #dbe4ef !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+    }
+
+    div[data-testid="stFormSubmitButton"]{
+        margin-top: 10px;
+    }
+
+    div[data-testid="stFormSubmitButton"] button{
+        border-radius:12px !important;
+        min-height:46px !important;
+        font-weight:800 !important;
+        padding: 0 18px !important;
+    }
+
+    @media (max-width: 768px){
+        .settings-outer{
+            padding: 84px 12px 28px 12px;
+        }
+
+        .settings-title{
+            font-size: 22px;
+            margin-bottom: 14px;
+        }
+
+        .settings-card{
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .settings-box{
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .settings-value{
+            font-size: 15px;
+        }
+
+        .settings-action-row{
+            justify-content: stretch;
+        }
+
+        .settings-logout-btn{
+            width: 100%;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    tab1, tab2 = st.tabs(["Thông tin tài khoản", "Mật khẩu & Bảo mật"])
+
+    with tab1:
+        st.markdown('<div class="settings-section-title">Thông tin tài khoản</div>', unsafe_allow_html=True)
+
+        st.markdown(f'''
+        <div class="settings-box">
+            <div class="settings-label">Tên đăng nhập</div>
+            <div class="settings-value">{escape(current_user["username"])}</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        st.markdown(f'''
+        <div class="settings-box">
+            <div class="settings-label">Mã người dùng</div>
+            <div class="settings-value">USER-{current_user["id"]}</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        st.markdown(f'''
+        <div class="settings-box">
+            <div class="settings-label">Ngày tạo tài khoản</div>
+            <div class="settings-value">{escape(str(current_user["created_at"]))}</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        st.markdown(f'''
+        <div class="settings-action-row">
+            <a class="settings-logout-btn" href="{build_app_url('home', logout=1)}" target="_self">
+                Đăng xuất
+            </a>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with tab2:
+        st.markdown('<div class="settings-card">', unsafe_allow_html=True)
+        st.markdown('<div class="settings-section-title">Mật khẩu & Bảo mật</div>', unsafe_allow_html=True)
+
+        st.markdown(f'''
+        <div class="settings-box">
+            <div class="settings-label">Tên đăng nhập</div>
+            <div class="settings-value">{escape(current_user["username"])}</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        st.markdown('''
+        <div class="settings-box">
+            <div class="settings-label">Mật khẩu hiện tại</div>
+            <div class="settings-value">••••••••</div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        with st.form("change_password_form", clear_on_submit=True):
+            old_password = st.text_input("Mật khẩu hiện tại", type="password")
+            new_password = st.text_input("Mật khẩu mới", type="password")
+            confirm_password = st.text_input("Nhập lại mật khẩu mới", type="password")
+            submit_change_password = st.form_submit_button("Lưu thay đổi", use_container_width=False)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        if submit_change_password:
+            if new_password != confirm_password:
+                st.error("Mật khẩu mới nhập lại chưa khớp.")
+            else:
+                ok, msg = update_user_password(
+                    st.session_state["auth_user"]["id"],
+                    old_password,
+                    new_password
+                )
+                if ok:
+                    st.success(msg)
+                else:
+                    st.error(msg)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+elif page == "congdong":
+    from html import escape
+
+    def safe_text(value, fallback="Đang cập nhật"):
+        text = str(value).strip() if value is not None else ""
+        return escape(text) if text else escape(fallback)
+
+    def safe_url(value):
+        text = str(value).strip() if value is not None else ""
+        if text.startswith(("http://", "https://", "data:")):
+            return escape(text, quote=True)
+        return ""
+
+    community_posts = load_community_posts(limit=50)
+
+    def build_avatar_label(username: str) -> str:
+        name = str(username or "").strip()
+        return (name[:1] or "U").upper()
+    
+    def normalize_post_image_src(value: str) -> str:
+        raw = str(value or "").strip()
+        if not raw:
+            return ""
+
+        raw = raw.replace("&amp;", "&")
+
+        if raw.startswith("data:"):
+            return raw
+
+        if raw.startswith(("http://", "https://")):
+            # Google Drive: đổi link share sang link xem ảnh trực tiếp
+            if "drive.google.com/file/d/" in raw:
+                try:
+                    file_id = raw.split("/file/d/")[1].split("/")[0]
+                    return f"https://drive.google.com/uc?export=view&id={file_id}"
+                except Exception:
+                    return raw
+
+            # GitHub blob -> raw
+            if "github.com" in raw and "/blob/" in raw:
+                raw = raw.replace("github.com/", "raw.githubusercontent.com/")
+                raw = raw.replace("/blob/", "/")
+                return raw
+
+            return raw
+
+        # nếu là đường dẫn local trong project
+        local_candidates = [
+            raw,
+            raw.replace(".jpg", ".png"),
+            raw.replace(".jpg", ".jpeg"),
+            raw.replace(".jpg", ".webp"),
+            raw.replace(".png", ".jpg"),
+            raw.replace(".png", ".jpeg"),
+            raw.replace(".png", ".webp"),
+            raw.replace(".jpeg", ".jpg"),
+            raw.replace(".jpeg", ".png"),
+            raw.replace(".jpeg", ".webp"),
+            raw.replace(".webp", ".jpg"),
+            raw.replace(".webp", ".png"),
+            raw.replace(".webp", ".jpeg"),
+        ]
+
+        local_image = image_to_data_uri(local_candidates)
+        return local_image if local_image else ""
+
+    hero_bg = hero_home_src if hero_home_src else ""
+
+    st.markdown(f"""
+    <style>
+    .cd-page {{
+        max-width: 1320px;
+        margin: 0 auto 42px auto;
+        padding: 0 12px 24px 12px;
+        box-sizing: border-box;
+    }}
+
+    .cd-hero {{
+        position: relative;
+        margin: 18px auto 22px auto;
+        min-height: 320px;
+        border-radius: 30px;
+        overflow: hidden;
+        background:
+            linear-gradient(180deg, rgba(7,19,37,0.30) 0%, rgba(7,19,37,0.60) 100%),
+            url('{hero_bg}');
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: center;
+        padding: 34px 34px;
+        box-shadow: 0 18px 38px rgba(15,23,42,0.10);
+    }}
+
+    .cd-hero-inner {{
+        max-width: 760px;
+        color: #ffffff;
+        position: relative;
+        z-index: 2;
+    }}
+
+    .cd-kicker {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.16);
+        border: 1px solid rgba(255,255,255,0.28);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+    }}
+
+    .cd-title {{
+        font-size: 40px;
+        font-weight: 900;
+        line-height: 1.15;
+        margin: 0 0 12px 0;
+    }}
+
+    .cd-sub {{
+        font-size: 17px;
+        line-height: 1.85;
+        color: rgba(255,255,255,0.94);
+        max-width: 700px;
+    }}
+
+    .cd-grid {{
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 22px;
+        align-items: start;
+    }}
+
+    .cd-compose {{
+        position: sticky;
+        top: 92px;
+        background: rgba(255,255,255,0.92);
+        border: 1px solid #e5edf6;
+        border-radius: 26px;
+        padding: 18px;
+        box-shadow: 0 16px 32px rgba(15,23,42,0.08);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }}
+
+    .cd-compose-title {{
+        font-size: 22px;
+        font-weight: 900;
+        color: #0f172a;
+        margin-bottom: 6px;
+    }}
+
+    .cd-compose-sub {{
+        font-size: 14px;
+        line-height: 1.7;
+        color: #64748b;
+        margin-bottom: 14px;
+    }}
+
+    .cd-feed {{
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }}
+
+    .cd-post {{
+        background: #ffffff;
+        border: 1px solid #e5edf6;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 14px 28px rgba(15,23,42,0.06);
+    }}
+
+    .cd-post-head {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px 18px 12px 18px;
+    }}
+
+    .cd-user {{
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }}
+
+    .cd-avatar {{
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1565c0 0%, #43b0f1 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 900;
+        flex-shrink: 0;
+    }}
+
+    .cd-user-main {{
+        min-width: 0;
+    }}
+
+    .cd-username {{
+        font-size: 16px;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1.3;
+    }}
+
+    .cd-time {{
+        font-size: 13px;
+        color: #64748b;
+        line-height: 1.5;
+        margin-top: 2px;
+    }}
+
+    .cd-badges {{
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }}
+
+    .cd-badge {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: #ecf5ff;
+        color: #1565c0;
+        border: 1px solid #cfe5ff;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+    }}
+
+    .cd-badge-alt {{
+        background: #fff7ed;
+        color: #c2410c;
+        border: 1px solid #fed7aa;
+    }}
+
+    .cd-content {{
+        padding: 0 18px 16px 18px;
+        font-size: 16px;
+        line-height: 1.9;
+        color: #334155;
+        white-space: pre-wrap;
+    }}
+
+    .cd-image {{
+        width: 100%;
+        height: 330px;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        border-top: 1px solid #edf2f7;
+    }}
+
+    .cd-empty {{
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px dashed #cbd5e1;
+        border-radius: 24px;
+        padding: 36px 22px;
+        text-align: center;
+        color: #475569;
+        font-size: 15px;
+        line-height: 1.8;
+    }}
+
+    div[data-testid="stForm"] {{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }}
+
+    div[data-testid="stTextArea"] textarea {{
+        min-height: 140px !important;
+        border-radius: 18px !important;
+        border: 1px solid #dbe4ef !important;
+        background: #f8fbff !important;
+        font-size: 15px !important;
+    }}
+
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+        min-height: 48px !important;
+        border-radius: 16px !important;
+        border: 1px solid #dbe4ef !important;
+        background: #f8fbff !important;
+        font-size: 14px !important;
+    }}
+
+    div[data-testid="stFormSubmitButton"] button {{
+        width: 100% !important;
+        min-height: 48px !important;
+        border: none !important;
+        border-radius: 16px !important;
+        background: linear-gradient(135deg, #1565c0 0%, #2b7fd3 100%) !important;
+        color: #ffffff !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        box-shadow: 0 14px 24px rgba(21,101,192,0.20) !important;
+    }}
+
+    @media (max-width: 980px) {{
+        .cd-grid {{
+            grid-template-columns: 1fr;
+        }}
+
+        .cd-compose {{
+            position: static;
+            top: auto;
+        }}
+    }}
+
+    @media (max-width: 768px) {{
+        .cd-page {{
+            padding: 0 10px 20px 10px;
+        }}
+
+        .cd-hero {{
+            min-height: 250px;
+            padding: 22px 18px;
+            border-radius: 22px;
+        }}
+
+        .cd-title {{
+            font-size: 28px;
+        }}
+
+        .cd-sub {{
+            font-size: 14px;
+            line-height: 1.75;
+        }}
+
+        .cd-post-head {{
+            flex-direction: column;
+            align-items: flex-start;
+        }}
+
+        .cd-badges {{
+            justify-content: flex-start;
+        }}
+
+        .cd-image {{
+            height: 240px;
+        }}
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="cd-page">
+        <div class="cd-hero">
+            <div class="cd-hero-inner">
+                <div class="cd-kicker">Không gian chia sẻ</div>
+                <div class="cd-title">Cộng đồng Lao Cai Heritage AI</div>
+                <div class="cd-sub">
+                    Nơi mọi người cùng giới thiệu điểm đến, lễ hội, làng nghề, chia sẻ hình ảnh thực tế
+                    và lan tỏa vẻ đẹp văn hóa – du lịch Lào Cai theo cách gần gũi, hiện đại.
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <style>
+    .cd-native-post{
+        background:#ffffff;
+        border:1px solid #e5edf6;
+        border-radius:24px;
+        padding:16px 16px 14px 16px;
+        box-shadow:0 14px 28px rgba(15,23,42,0.06);
+        margin-bottom:18px;
+    }
+
+    .cd-native-userrow{
+        display:flex;
+        align-items:center;
+        gap:12px;
+        margin-bottom:10px;
+    }
+
+    .cd-native-avatar{
+        width:46px;
+        height:46px;
+        border-radius:50%;
+        background:linear-gradient(135deg, #1565c0 0%, #43b0f1 100%);
+        color:#ffffff;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:18px;
+        font-weight:900;
+        flex-shrink:0;
+    }
+
+    .cd-native-name{
+        font-size:16px;
+        font-weight:900;
+        color:#0f172a;
+        line-height:1.2;
+    }
+
+    .cd-native-time{
+        font-size:13px;
+        color:#64748b;
+        margin-top:2px;
+    }
+
+    .cd-native-pill{
+        display:inline-block;
+        padding:6px 10px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:800;
+        margin-right:8px;
+        margin-bottom:8px;
+        border:1px solid #dbe4ef;
+        background:#f8fbff;
+        color:#1565c0;
+    }
+
+    .cd-native-pill-alt{
+        background:#fff7ed;
+        color:#c2410c;
+        border:1px solid #fed7aa;
+    }
+
+    .cd-native-content{
+        font-size:15px;
+        line-height:1.85;
+        color:#334155;
+        white-space:pre-wrap;
+        word-break:break-word;
+        margin-top:2px;
+    }
+
+    .cd-native-image-wrap img{
+        border-radius:18px !important;
+        border:1px solid #edf2f7;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    page_left, page_center, page_right = st.columns([0.06, 0.88, 0.06])
+
+    with page_center:
+        left_col, right_col = st.columns([0.34, 0.66], gap="large")
+
+        with left_col:
+            st.markdown('<div class="cd-compose">', unsafe_allow_html=True)
+            st.markdown('<div class="cd-compose-title">Đăng chia sẻ mới</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="cd-compose-sub">Viết cảm nhận, giới thiệu địa điểm và thêm link ảnh để bài đăng sinh động hơn.</div>',
+                unsafe_allow_html=True
+            )
+
+            with st.form("community_post_form", clear_on_submit=True):
+                post_content = st.text_area(
+                    "Bạn muốn chia sẻ gì?",
+                    placeholder="Ví dụ: Mình vừa ghé lễ hội Gầu Tào ở Bắc Hà và thấy không khí rất đặc sắc...",
+                    key="community_post_content"
+                )
+
+                c1, c2 = st.columns(2)
+                with c1:
+                    post_category = st.selectbox(
+                        "Loại nội dung",
+                        ["Trải nghiệm", "Điểm đến", "Lễ hội", "Làng nghề", "Di tích"],
+                        key="community_post_category"
+                    )
+                with c2:
+                    post_area = st.text_input(
+                        "Khu vực",
+                        placeholder="Ví dụ: Sa Pa, Bắc Hà...",
+                        key="community_post_area"
+                    )
+
+                post_image_url = st.text_input(
+                    "Link ảnh",
+                    placeholder="Dán link ảnh tại đây",
+                    key="community_post_image_url"
+                )
+
+                submit_post = st.form_submit_button("Đăng bài", use_container_width=True)
+
+            if submit_post:
+                ok, msg = create_community_post(
+                    user_id=st.session_state["auth_user"]["id"],
+                    username=st.session_state["auth_user"]["username"],
+                    content=post_content,
+                    image_url=post_image_url,
+                    category=post_category,
+                    area=post_area
+                )
+                if ok:
+                    st.success(msg)
+                    st.rerun()
+                else:
+                    st.error(msg)
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with right_col:
+            if community_posts:
+                for post in community_posts:
+                    username = str(post.get("username", "")).strip() or "Người dùng"
+                    avatar_letter = build_avatar_label(username)
+                    content = str(post.get("content", "")).strip()
+                    category = str(post.get("category", "")).strip() or "Chia sẻ"
+                    area = str(post.get("area", "")).strip() or "Lào Cai"
+                    created_at = format_post_time(str(post.get("created_at", "")).strip())
+                    image_url = str(post.get("image_url", "")).strip()
+
+                    st.markdown('<div class="cd-native-post">', unsafe_allow_html=True)
+
+                    # Hàng đầu: avatar + tên + thời gian
+                    st.markdown(f"""
+                    <div class="cd-native-userrow">
+                        <div class="cd-native-avatar">{escape(avatar_letter)}</div>
+                        <div>
+                            <div class="cd-native-name">{escape(username)}</div>
+                            <div class="cd-native-time">{escape(created_at)}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Badge
+                    st.markdown(f"""
+                    <div>
+                        <span class="cd-native-pill">{escape(category)}</span>
+                        <span class="cd-native-pill cd-native-pill-alt">{escape(area)}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Nội dung
+                    st.markdown(
+                        f'<div class="cd-native-content">{escape(content)}</div>',
+                        unsafe_allow_html=True
+                    )
+
+                    # Ảnh
+                    raw_image_url = str(post.get("image_url", "")).strip()
+                image_src = normalize_post_image_src(raw_image_url)
+
+                if image_src:
+                    st.markdown('<div class="cd-native-image-wrap">', unsafe_allow_html=True)
+                    st.image(image_src, use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+            else:
+                st.info("Chưa có bài đăng nào trong cộng đồng. Hãy là người đầu tiên chia sẻ một địa điểm, một lễ hội hoặc một trải nghiệm đẹp về Lào Cai.")
+
+elif page == "lehoi_langnghe":
+    import json
+    from html import escape
+    from pathlib import Path
+    import fitz
+    import re
+    import unicodedata
+
+    def clean_text(value):
+        if value is None:
+            return ""
+        return str(value).replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    def normalize_file_name(value):
+        text = clean_text(value).lower()
+        text = text.replace("đ", "d").replace("Đ", "D")
+        text = unicodedata.normalize("NFD", text)
+        text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+        text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+        return text
+
+    def read_text_file_any(path_obj):
+        path_obj = Path(path_obj)
+        if not path_obj.exists():
+            return ""
+
+        suffix = path_obj.suffix.lower()
+
+        try:
+            if suffix == ".txt":
+                return path_obj.read_text(encoding="utf-8").strip()
+
+            elif suffix == ".docx":
+                try:
+                    from docx import Document
+                    doc = Document(str(path_obj))
+                    parts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+                    return "\n".join(parts).strip()
+                except Exception:
+                    return ""
+
+            elif suffix == ".pdf":
+                try:
+                    pdf = fitz.open(str(path_obj))
+                    texts = []
+                    for page in pdf:
+                        txt = page.get_text("text").strip()
+                        if txt:
+                            texts.append(txt)
+                    pdf.close()
+                    return "\n".join(texts).strip()
+                except Exception:
+                    return ""
+
+        except Exception:
+            return ""
+
+        return ""
+
+    def pick_intro_text_file(item):
+        folder = Path("text_lehoi_langnghe")
+        base_name = normalize_file_name(item.get("name", ""))
+
+        candidates = [
+            folder / f"{base_name}.txt",
+            folder / f"{base_name}.docx",
+            folder / f"{base_name}.pdf",
+        ]
+
+        for fp in candidates:
+            if fp.exists():
+                return read_text_file_any(fp)
+
+        return ""
+
+    def build_intro_preview(item):
+        intro_text = pick_intro_text_file(item)
+
+        if not intro_text:
+            intro_text = clean_text(item.get("full_desc")) or clean_text(item.get("short_desc"))
+
+        intro_text = " ".join(intro_text.split())
+
+        if len(intro_text) > 260:
+            intro_text = intro_text[:260].rsplit(" ", 1)[0] + "..."
+
+        return escape(intro_text if intro_text else "Thông tin giới thiệu đang được cập nhật.")
+
+    try:
+        with open("lehoi_langnghe.json", "r", encoding="utf-8") as f:
+            lehoi_data = json.load(f)
+    except Exception as e:
+        st.error(f"Lỗi đọc file lehoi_langnghe.json: {e}")
+        st.stop()
+
+    def safe_text(value, fallback="Đang cập nhật"):
+        text = str(value).strip() if value is not None else ""
+        return escape(text) if text else escape(fallback)
+
+    def normalize_text(value):
+        return str(value or "").strip().lower()
+
+    def card_image_src(value):
+        raw = str(value).strip() if value is not None else ""
+        if not raw:
+            return ""
+        if raw.startswith(("http://", "https://", "data:")):
+            return raw
+        return image_to_data_uri([
+            raw,
+            raw.replace(".jpg", ".png"),
+            raw.replace(".jpg", ".jpeg"),
+            raw.replace(".jpg", ".webp"),
+            raw.replace(".png", ".jpg"),
+            raw.replace(".png", ".jpeg"),
+            raw.replace(".png", ".webp"),
+        ]) or ""
+
+    st.markdown("""
+    <style>
+    .lln-hero{
+        max-width:1320px;
+        margin:20px auto 16px auto;
+        padding:48px 28px;
+        border-radius:28px;
+        background: linear-gradient(135deg, #1565c0 0%, #2e7d32 100%);
+        color:white;
+        text-align:center;
+        box-shadow:0 18px 38px rgba(15,23,42,0.10);
+    }
+    .lln-title{
+        font-size:38px;
+        font-weight:900;
+        margin-bottom:10px;
+    }
+    .lln-sub{
+        font-size:17px;
+        line-height:1.8;
+        max-width:850px;
+        margin:0 auto;
+        opacity:0.96;
+    }
+    .lln-grid{
+        max-width:1320px;
+        margin:18px auto 50px auto;
+        display:grid;
+        grid-template-columns:repeat(3, minmax(0, 1fr));
+        gap:24px;
+    }
+    .lln-card{
+        background:#ffffff;
+        border-radius:24px;
+        overflow:hidden;
+        box-shadow:0 12px 28px rgba(15,23,42,0.08);
+        border:1px solid #e5edf6;
+    }
+    .lln-img{
+        height:220px;
+        background-size:cover;
+        background-position:center;
+        background-repeat:no-repeat;
+    }
+    .lln-body{
+        padding:18px;
+    }elif page == "lehoi_langnghe":
+        display:inline-block;
+        padding:6px 12px;
+        border-radius:999px;
+        background:#ecf5ff;
+        color:#1565c0;
+        font-size:12px;
+        font-weight:800;
+        margin-bottom:10px;
+    }
+    .lln-name{
+        font-size:22px;
+        font-weight:900;
+        color:#111827;
+        margin-bottom:10px;
+        line-height:1.3;
+    }
+    .lln-area{
+        font-size:14px;
+        color:#64748b;
+        margin-bottom:10px;
+    }
+    .lln-desc{
+        font-size:15px;
+        line-height:1.7;
+        color:#475569;
+    }
+    @media (max-width: 900px){
+        .lln-grid{
+            grid-template-columns:1fr 1fr;
+        }
+    }
+    @media (max-width: 640px){
+        .lln-grid{
+            grid-template-columns:1fr;
+            padding:0 10px;
+        }
+        .lln-hero{
+            margin:12px 10px 12px 10px;
+            padding:30px 18px;
+            border-radius:20px;
+        }
+        .lln-title{
+            font-size:26px;
+        }
+        .lln-sub{
+            font-size:14px;
+        }
+    }
+                
+    .lln-filter-wrap{
+        max-width:1320px;
+        margin: 6px auto 10px auto;
+        padding: 0 8px;
+        box-sizing:border-box;
+    }
+
+    .lln-filter-title{
+        text-align:center;
+        font-size:15px;
+        font-weight:800;
+        color:#334155;
+        margin-bottom:10px;
+        letter-spacing:0.01em;
+    }
+
+    div[data-testid="stSelectbox"][aria-label="Lọc nội dung"],
+    div[data-testid="stSelectbox"]:has(label p:contains("Lọc nội dung")){
+        width:100%;
+    }
+
+    div[data-testid="stSelectbox"] label{
+        font-size:15px !important;
+        font-weight:800 !important;
+        color:#334155 !important;
+        margin-bottom:8px !important;
+    }
+
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div{
+        min-height:56px !important;
+        border-radius:18px !important;
+        border:1.6px solid #dbe4ef !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+        box-shadow: 0 10px 24px rgba(15,23,42,0.06) !important;
+        padding-left:16px !important;
+        padding-right:16px !important;
+        font-size:18px !important;
+        font-weight:700 !important;
+        color:#0f172a !important;
+        transition: all 0.2s ease !important;
+    }
+
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:hover{
+        border-color:#93c5fd !important;
+        box-shadow: 0 14px 28px rgba(21,101,192,0.10) !important;
+    }
+
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within{
+        border-color:#1565c0 !important;
+        box-shadow: 0 0 0 4px rgba(21,101,192,0.12) !important;
+    }
+
+    @media (max-width: 640px){
+        .lln-filter-wrap{
+            padding:0 10px;
+            margin: 4px auto 10px auto;
+        }
+
+        div[data-testid="stSelectbox"] div[data-baseweb="select"] > div{
+            min-height:52px !important;
+            border-radius:16px !important;
+            font-size:16px !important;
+        }
+    }
+                
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="lln-hero">
+        <div class="lln-title">Lễ hội - Làng nghề Lào Cai</div>
+        <div class="lln-sub">
+            Khám phá các lễ hội truyền thống và làng nghề đặc sắc của Lào Cai,
+            nơi lưu giữ những giá trị văn hóa bản địa độc đáo của vùng cao.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="lln-filter-wrap">', unsafe_allow_html=True)
+
+    left_filter, center_filter, right_filter = st.columns([1.2, 2.2, 1.2])
+
+    with center_filter:
+        selected_type = st.selectbox(
+            "",
+            ["Tất cả", "Lễ hội", "Làng nghề"],
+            key="lln_type_filter"
+        )
+
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    filtered_data = lehoi_data
+    if selected_type == "Lễ hội":
+        filtered_data = [x for x in lehoi_data if normalize_text(x.get("type")) == "le_hoi"]
+    elif selected_type == "Làng nghề":
+        filtered_data = [x for x in lehoi_data if normalize_text(x.get("type")) == "lang_nghe"]
+
+    html_cards = '<div class="lln-grid">'
+
+    for item in filtered_data:
+        item_type = normalize_text(item.get("type"))
+        badge_text = "Lễ hội" if item_type == "le_hoi" else "Làng nghề"
+
+        image_src = card_image_src(item.get("image"))
+        if not image_src:
+            image_src = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop"
+
+        intro_preview = build_intro_preview(item)
+
+        html_cards += f"""
+        <div class="lln-card">
+            <div class="lln-img" style="background-image:url('{image_src}');"></div>
+
+            <div class="lln-body">
+                <div class="lln-badge">{badge_text}</div>
+                <div class="lln-name">{safe_text(item.get("name"))}</div>
+                <div class="lln-area">
+                    Khu vực: {safe_text(item.get("area"))} • Thời điểm: {safe_text(item.get("season"))}
+                </div>
+                <div class="lln-desc">{safe_text(item.get("short_desc"))}</div>
+            </div>
+
+            <div class="lln-hover">
+                <div class="lln-hover-box">
+                    <div class="lln-hover-badge">{badge_text}</div>
+                    <div class="lln-hover-name">{safe_text(item.get("name"))}</div>
+                    <div class="lln-hover-intro">{intro_preview}</div>
+                </div>
+            </div>
+        </div>
+        """
+
+    html_cards += "</div>"
+
+    card_count = len(filtered_data)
+    if card_count == 0:
+        html_cards = """
+        <div style="
+            max-width:1320px;
+            margin:18px auto 50px auto;
+            background:#ffffff;
+            border:1px dashed #cbd5e1;
+            border-radius:24px;
+            padding:40px 24px;
+            text-align:center;
+            color:#475569;
+            font-size:16px;
+            line-height:1.8;
+        ">
+            Chưa có dữ liệu phù hợp để hiển thị.
+        </div>
+        """
+        card_height = 220
+    else:
+        rows = (card_count + 2) // 3
+        if card_count == 1:
+            rows = 1
+        card_height = max(420, rows * 470)
+
+    components.html(
+        f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                html, body {{
+                    margin: 0;
+                    padding: 0;
+                    background: transparent;
+                    font-family: Inter, Arial, sans-serif;
+                }}
+
+                .lln-grid {{
+                    max-width:1320px;
+                    margin:18px auto 50px auto;
+                    display:grid;
+                    grid-template-columns:repeat(3, minmax(0, 1fr));
+                    gap:24px;
+                    padding:0 8px;
+                    box-sizing:border-box;
+                }}
+
+                <style>
+                html, body {{
+                    margin: 0;
+                    padding: 0;
+                    background: transparent;
+                    font-family: Inter, Arial, sans-serif;
+                }}
+
+                .lln-grid {{
+                    max-width:1320px;
+                    margin:18px auto 50px auto;
+                    display:grid;
+                    grid-template-columns:repeat(3, minmax(0, 1fr));
+                    gap:24px;
+                    padding:0 8px;
+                    box-sizing:border-box;
+                }}
+
+                .lln-card {{
+                    position: relative;
+                    min-height: 495px;
+                    border-radius: 26px;
+                    overflow: hidden;
+                    background: #ffffff;
+                    border: 1px solid #e5edf6;
+                    box-shadow: 0 12px 28px rgba(15,23,42,0.08);
+                    transition: transform 0.28s ease, box-shadow 0.28s ease;
+                }}
+
+                .lln-card:hover {{
+                    transform: translateY(-6px);
+                    box-shadow: 0 18px 36px rgba(15,23,42,0.14);
+                }}
+
+                .lln-img {{
+                    height: 250px;
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                    transition: transform 0.55s ease;
+                }}
+
+                .lln-card:hover .lln-img {{
+                    transform: scale(1.06);
+                }}
+
+                .lln-body {{
+                    position: relative;
+                    padding: 18px 20px 20px 20px;
+                    background: #ffffff;
+                    z-index: 2;
+                    transition: opacity 0.28s ease, transform 0.28s ease;
+                }}
+
+                .lln-card:hover .lln-body {{
+                    opacity: 0.08;
+                    transform: translateY(6px);
+                }}
+
+                .lln-badge {{
+                    display:inline-block;
+                    padding:6px 12px;
+                    border-radius:999px;
+                    background:#ecf5ff;
+                    color:#1565c0;
+                    font-size:12px;
+                    font-weight:800;
+                    margin-bottom:10px;
+                }}
+
+                .lln-name {{
+                    font-size:22px;
+                    font-weight:900;
+                    color:#111827;
+                    margin-bottom:10px;
+                    line-height:1.3;
+                }}
+
+                .lln-area {{
+                    font-size:14px;
+                    color:#64748b;
+                    margin-bottom:12px;
+                    line-height:1.7;
+                }}
+
+                .lln-desc {{
+                    font-size:15px;
+                    line-height:1.75;
+                    color:#475569;
+                }}
+
+                .lln-hover {{
+                    position: absolute;
+                    inset: 0;
+                    z-index: 3;
+                    display: flex;
+                    align-items: flex-end;
+                    padding: 22px;
+                    background: linear-gradient(
+                        180deg,
+                        rgba(15,23,42,0.04) 0%,
+                        rgba(15,23,42,0.12) 28%,
+                        rgba(15,23,42,0.78) 72%,
+                        rgba(15,23,42,0.92) 100%
+                    );
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.35s ease;
+                }}
+
+                .lln-card:hover .lln-hover {{
+                    opacity: 1;
+                }}
+
+                .lln-hover-box {{
+                    width: 100%;
+                    transform: translateY(28px);
+                    transition: transform 0.38s ease;
+                }}
+
+                .lln-card:hover .lln-hover-box {{
+                    transform: translateY(0);
+                }}
+
+                .lln-hover-badge {{
+                    display:inline-block;
+                    padding:7px 12px;
+                    border-radius:999px;
+                    background: rgba(255,255,255,0.16);
+                    border: 1px solid rgba(255,255,255,0.24);
+                    color:#ffffff;
+                    font-size:12px;
+                    font-weight:800;
+                    margin-bottom:10px;
+                }}
+
+                .lln-hover-name {{
+                    font-size:24px;
+                    font-weight:900;
+                    color:#ffffff;
+                    line-height:1.3;
+                    margin-bottom:10px;
+                    text-shadow: 0 4px 14px rgba(0,0,0,0.24);
+                }}
+
+                .lln-hover-intro {{
+                    font-size:15px;
+                    line-height:1.8;
+                    color: rgba(255,255,255,0.94);
+                    display: -webkit-box;
+                    -webkit-line-clamp: 6;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                    text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+                }}
+
+                @media (max-width: 900px) {{
+                    .lln-grid {{
+                        grid-template-columns:1fr 1fr;
+                    }}
+                }}
+
+                @media (max-width: 640px) {{
+                    .lln-grid {{
+                        grid-template-columns:1fr;
+                        padding:0 10px;
+                    }}
+
+                    .lln-card {{
+                        min-height: 460px;
+                    }}
+
+                    .lln-img {{
+                        height: 220px;
+                    }}
+
+                    .lln-name,
+                    .lln-hover-name {{
+                        font-size: 20px;
+                    }}
+
+                    .lln-desc,
+                    .lln-hover-intro {{
+                        font-size: 14px;
+                    }}
+                }}
+                </style>
+
+                @media (max-width: 900px) {{
+                    .lln-grid {{
+                        grid-template-columns:1fr 1fr;
+                    }}
+                }}
+
+                @media (max-width: 640px) {{
+                    .lln-grid {{
+                        grid-template-columns:1fr;
+                        padding:0 10px;
+                    }}
+                }}
+            </style>
+        </head>
+        <body>
+            {html_cards}
+        </body>
+        </html>
+        """,
+        height=card_height,
+        scrolling=False
+    )

@@ -1,0 +1,632 @@
+[
+  {
+    "id": 1,
+    "name": "Lễ hội Đền Thượng",
+    "type": "le_hoi",
+    "area": "Thành phố Lào Cai",
+    "season": "Rằm tháng Giêng",
+    "short_desc": "Lễ hội tâm linh lớn của thành phố Lào Cai, tưởng nhớ công đức Hưng Đạo Đại Vương Trần Quốc Tuấn.",
+    "full_desc": "Lễ hội Đền Thượng diễn ra vào rằm tháng Giêng hằng năm tại phường Lào Cai, thành phố Lào Cai. Phần lễ có rước kiệu và tế khai xuân trang nghiêm; phần hội có múa rồng, kéo co, ném còn, vật dân tộc, cờ người. Lễ hội thể hiện đạo lý uống nước nhớ nguồn và cầu chúc quốc thái dân an.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_en_thuong.jpg",
+    "highlights": [
+      "Tâm linh đầu xuân",
+      "Rước kiệu trang nghiêm",
+      "Bản sắc biên cương"
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Lễ hội Gầu Tào",
+    "type": "le_hoi",
+    "area": "Bắc Hà - Si Ma Cai - Mường Khương",
+    "season": "Mùng 2 đến mùng 4 Tết",
+    "short_desc": "Ngày hội lớn của người Mông, cầu sức khỏe, bình an và gắn kết cộng đồng.",
+    "full_desc": "Lễ hội Gầu Tào được tổ chức đầu năm mới ở nhiều huyện vùng cao. Nghi lễ chính diễn ra bên cây nêu, kết hợp múa khèn, hát giao duyên, chọi gà, bắn nỏ và đánh quay. Đây là một trong những lễ hội tiêu biểu nhất của người Mông ở Lào Cai.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_gau_tao.jpg",
+    "highlights": [
+      "Lễ hội người Mông",
+      "Không khí đầu xuân",
+      "Nhiều trò chơi dân gian"
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Lễ hội Roóng Poọc",
+    "type": "le_hoi",
+    "area": "Sa Pa",
+    "season": "Ngày Thìn tháng Giêng",
+    "short_desc": "Lễ hội xuống đồng của người Giáy, cầu mong mùa màng bội thu và cuộc sống sinh sôi.",
+    "full_desc": "Lễ hội Roóng Poọc diễn ra tại xã Tả Van, Sa Pa, đánh dấu khởi đầu mùa vụ mới. Nghi lễ cúng thần Đất, thần Mương đi cùng các hoạt động tung còn, thi cày ruộng, kéo co dây mây. Lễ hội phản ánh đậm nét văn hóa nông nghiệp của người Giáy.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_roong_pooc.jpg",
+    "highlights": [
+      "Lễ hội xuống đồng",
+      "Văn hóa người Giáy",
+      "Cầu mùa bội thu"
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Lễ Tết nhảy",
+    "type": "le_hoi",
+    "area": "Sa Pa - Bát Xát",
+    "season": "Cuối năm hoặc đầu xuân",
+    "short_desc": "Nghi lễ đặc sắc của người Dao đỏ nhằm tạ ơn tổ tiên và giáo dục truyền thống cho con cháu.",
+    "full_desc": "Tết nhảy là nghi lễ quan trọng của người Dao đỏ, với các điệu múa chuông, múa kiếm và phần lễ kéo dài suốt ngày đêm. Lễ hội thể hiện lòng biết ơn nguồn cội, tinh thần đoàn kết và sự tiếp nối văn hóa trong cộng đồng.",
+    "image": "kho_anh/lehoi_langnghe/le_tet_nhay.jpg",
+    "highlights": [
+      "Nghi lễ người Dao đỏ",
+      "Múa chuông múa kiếm",
+      "Biết ơn tổ tiên"
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Lễ hội Lồng Tồng",
+    "type": "le_hoi",
+    "area": "Bảo Yên - Văn Bàn - Bắc Hà",
+    "season": "Đầu tháng Giêng",
+    "short_desc": "Lễ hội xuống đồng của người Tày, tôn vinh thần Nông và mở đầu năm lao động mới.",
+    "full_desc": "Lễ hội Lồng Tồng có lễ rước mâm cúng từ bản ra đồng, kết hợp hát Then, hát Lượn, tung còn và các trò chơi dân gian. Đây là sinh hoạt văn hóa quan trọng gắn với đời sống lúa nước và niềm tin vào mùa màng tốt tươi.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_long_tong.jpg",
+    "highlights": [
+      "Lễ hội người Tày",
+      "Tôn vinh thần Nông",
+      "Không khí lao động đầu năm"
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Hội đua ngựa truyền thống Bắc Hà",
+    "type": "le_hoi",
+    "area": "Bắc Hà",
+    "season": "Tháng 6",
+    "short_desc": "Hoạt động văn hóa - thể thao đặc sắc của vùng cao nguyên trắng Bắc Hà.",
+    "full_desc": "Hội đua ngựa Bắc Hà hình thành từ tập quán sử dụng ngựa trong đời sống và tinh thần thượng võ của người dân địa phương. Điểm nổi bật là những kỵ mã chân đất cưỡi ngựa không yên cương, tạo nên sức hấp dẫn riêng cho du khách.",
+    "image": "kho_anh/lehoi_langnghe/hoi_ua_ngua_truyen_thong_bac_ha.jpg",
+    "highlights": [
+      "Sôi động",
+      "Kỵ mã chân đất",
+      "Điểm nhấn du lịch"
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Lễ hội Đền Bảo Hà",
+    "type": "le_hoi",
+    "area": "Bảo Yên",
+    "season": "17 tháng 7 Âm lịch",
+    "short_desc": "Lễ hội tưởng nhớ danh tướng Hoàng Bảy, trung tâm tín ngưỡng thờ Mẫu quan trọng ở Lào Cai.",
+    "full_desc": "Lễ hội Đền Bảo Hà có các nghi thức rước kiệu, dâng hương, hát văn, múa mồi và trò chơi dân gian. Đây là dịp thể hiện lòng tri ân với người có công bảo vệ biên cương và gìn giữ giá trị văn hóa tín ngưỡng đặc sắc.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_en_bao_ha.jpg",
+    "highlights": [
+      "Tín ngưỡng thờ Mẫu",
+      "Tưởng nhớ Hoàng Bảy",
+      "Không gian linh thiêng"
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Lễ hội Cúng rừng",
+    "type": "le_hoi",
+    "area": "Mường Khương - Si Ma Cai",
+    "season": "Cuối tháng Giêng hoặc tháng 6 Âm lịch",
+    "short_desc": "Lễ hội của người Nùng và Mông, gắn với niềm tin rừng là nơi ngự của thần bảo hộ bản làng.",
+    "full_desc": "Lễ hội Cúng rừng diễn ra tại khu rừng cấm với các nghi lễ tế thần và cam kết bảo vệ rừng. Lễ hội mang giá trị giáo dục sâu sắc về môi trường, nguồn nước và trách nhiệm cộng đồng.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_cung_rung.jpg",
+    "highlights": [
+      "Bảo vệ môi trường",
+      "Tín ngưỡng rừng thiêng",
+      "Ý thức cộng đồng"
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Lễ hội Quét làng",
+    "type": "le_hoi",
+    "area": "Sa Pa",
+    "season": "Ngày Ngọ hoặc ngày Mùi tháng Hai Âm lịch",
+    "short_desc": "Lễ hội của người Xá Phó nhằm xua đuổi điều xấu, cầu mong cuộc sống bình an.",
+    "full_desc": "Trong lễ hội, thầy cúng quét dọn từng nhà rồi mang lễ vật ra bãi trống ngoài bản để cúng chung. Nghi lễ phản ánh niềm tin dân gian và khát vọng về một cộng đồng sạch sẽ, khỏe mạnh, không bệnh tật.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_quet_lang.jpg",
+    "highlights": [
+      "Nghi lễ độc đáo",
+      "Người Xá Phó",
+      "Cầu bình an"
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Lễ hội Nhặn Sồng và Nào Sồng",
+    "type": "le_hoi",
+    "area": "Sa Pa",
+    "season": "Ngày Thìn đầu năm mới",
+    "short_desc": "Lễ hội của người Dao gắn với quy ước cộng đồng về bảo vệ rừng và gia súc.",
+    "full_desc": "Người dân đọc bản quy ước, uống rượu thề và cam kết thực hiện đúng luật tục của làng. Lễ hội cho thấy vai trò quan trọng của luật tục trong quản lý xã hội truyền thống và bảo vệ tài nguyên bản địa.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_nhan_song_va_nao_song.jpg",
+    "highlights": [
+      "Luật tục cộng đồng",
+      "Bảo vệ rừng",
+      "Văn hóa người Dao"
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Lễ hội dâng hương Đền Ken",
+    "type": "le_hoi",
+    "area": "Văn Bàn",
+    "season": "Mùng 7 tháng Giêng",
+    "short_desc": "Lễ hội tưởng nhớ công lao khai phá vùng đất của các vị tướng họ Nguyễn.",
+    "full_desc": "Lễ hội Đền Ken có phần lễ rước kiệu, dâng hương và phần hội với bắn nỏ, đẩy gậy, hát Then, đàn tính. Đây là dịp cầu mong năm mới ấm no và thể hiện tinh thần đoàn kết giữa các cộng đồng dân tộc.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_dang_huong_en_ken.jpg",
+    "highlights": [
+      "Dâng hương đầu xuân",
+      "Hát Then đàn tính",
+      "Tinh thần đoàn kết"
+    ]
+  },
+  {
+    "id": 12,
+    "name": "Lễ hội Đền Cô Tân An",
+    "type": "le_hoi",
+    "area": "Văn Bàn",
+    "season": "17 tháng Giêng",
+    "short_desc": "Lễ hội gắn với tín ngưỡng thờ Mẫu, tri ân người có công bảo vệ biên cương.",
+    "full_desc": "Đền Cô Tân An thờ Mẫu Thượng Ngàn, con gái danh tướng Hoàng Bảy. Lễ hội có rước kiệu sang Đền Bảo Hà, tế lễ mẫu và nhiều trò chơi dân gian, góp phần làm phong phú đời sống văn hóa tâm linh ở Lào Cai.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_en_co_tan_an.jpg",
+    "highlights": [
+      "Tín ngưỡng thờ Mẫu",
+      "Liên kết với Đền Bảo Hà",
+      "Linh thiêng đầu năm"
+    ]
+  },
+  {
+    "id": 13,
+    "name": "Lễ hội Say Sán",
+    "type": "le_hoi",
+    "area": "Bắc Hà - Si Ma Cai",
+    "season": "Mùng 2 đến mùng 6 Tết",
+    "short_desc": "Lễ hội vui xuân của người Mông, thiên về giao lưu văn hóa và kết nối cộng đồng.",
+    "full_desc": "Say Sán là hình thức lễ hội gần với Gầu Tào nhưng nhấn mạnh hoạt động vui chơi, thi múa khèn, thổi sáo và hát đối đáp của thanh niên nam nữ. Đây là không gian văn hóa nghệ thuật đặc trưng và là nơi kết duyên cho nhiều đôi lứa.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_say_san.jpg",
+    "highlights": [
+      "Vui xuân vùng cao",
+      "Múa khèn thổi sáo",
+      "Giao lưu cộng đồng"
+    ]
+  },
+  {
+    "id": 14,
+    "name": "Lễ hội Cấp sắc",
+    "type": "le_hoi",
+    "area": "Sa Pa - Bát Xát - Bảo Thắng",
+    "season": "Tháng 11, 12 Âm lịch hoặc tháng Giêng",
+    "short_desc": "Nghi lễ trưởng thành quan trọng nhất của người đàn ông Dao.",
+    "full_desc": "Lễ hội Cấp sắc có các nghi thức cấp đạo sắc, nhảy múa và truyền dạy đạo lý làm người. Đây là dấu mốc khẳng định vị trí cá nhân trong cộng đồng và thể hiện sự gắn bó với tổ tiên, thần linh theo tín ngưỡng người Dao.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_cap_sac.jpg",
+    "highlights": [
+      "Nghi lễ trưởng thành",
+      "Giáo dục đạo lý",
+      "Bản sắc người Dao"
+    ]
+  },
+  {
+    "id": 15,
+    "name": "Lễ hội Xuống đồng Bản Pho",
+    "type": "le_hoi",
+    "area": "Bắc Hà",
+    "season": "Mùng 5 Tết",
+    "short_desc": "Lễ hội cầu mùa của đồng bào Mông vùng cao Bắc Hà, mở đầu năm canh tác mới.",
+    "full_desc": "Lễ hội có nghi lễ cúng thần nông, múa xòe quanh cây nêu và thưởng thức rượu ngô Bản Pho. Đây là sinh hoạt văn hóa gắn với khát vọng ấm no, no đủ và tinh thần cộng đồng đầu năm.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_xuong_ong_ban_pho.jpg",
+    "highlights": [
+      "Cầu mùa đầu năm",
+      "Người Mông Bắc Hà",
+      "Gắn với rượu ngô Bản Pho"
+    ]
+  },
+  {
+    "id": 16,
+    "name": "Lễ hội Đền Mẫu Lào Cai",
+    "type": "le_hoi",
+    "area": "Thành phố Lào Cai",
+    "season": "Mùng 3 tháng Ba Âm lịch",
+    "short_desc": "Lễ hội thờ Đức Thánh Mẫu Liễu Hạnh, giữ gìn tín ngưỡng thờ Mẫu tại vùng biên cương.",
+    "full_desc": "Lễ hội Đền Mẫu có các nghi thức dâng hương, hầu đồng, hát văn và rước mẫu. Đây là hoạt động văn hóa tâm linh quan trọng của người dân địa phương và du khách khi đến với thành phố Lào Cai.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_en_mau_lao_cai.jpg",
+    "highlights": [
+      "Thờ Mẫu tam phủ",
+      "Không gian tâm linh",
+      "Nét đẹp văn hóa Việt"
+    ]
+  },
+  {
+    "id": 17,
+    "name": "Lễ hội Khô Già Già",
+    "type": "le_hoi",
+    "area": "Bát Xát",
+    "season": "Ngày Thìn đầu tiên tháng 6 Âm lịch",
+    "short_desc": "Lễ hội độc đáo của người Hà Nhì, cầu mùa màng tốt tươi và vật nuôi phát triển.",
+    "full_desc": "Lễ hội Khô Già Già diễn ra ở Y Tý, A Lù với nghi lễ cúng tế tại rừng cấm cùng nhiều trò chơi như đu dây, bập bênh. Đây là một trong những lễ hội lâu đời, tiêu biểu cho văn hóa nông nghiệp của người Hà Nhì Đen.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_kho_gia_gia.jpg",
+    "highlights": [
+      "Người Hà Nhì",
+      "Lễ hội lâu đời",
+      "Văn hóa nông nghiệp"
+    ]
+  },
+  {
+    "id": 18,
+    "name": "Lễ hội Cốm",
+    "type": "le_hoi",
+    "area": "Bắc Hà - Bảo Yên",
+    "season": "Tháng 9 hoặc tháng 10 Âm lịch",
+    "short_desc": "Lễ hội tết cơm mới của người Tày, tạ ơn thần linh và tổ tiên sau mùa gặt.",
+    "full_desc": "Lễ hội Cốm có hoạt động giã cốm truyền thống, cúng cơm mới, hát khắp và múa xòe. Đây là dịp tôn vinh hạt gạo, thành quả lao động và gắn kết cộng đồng sau vụ mùa bội thu.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_com.jpg",
+    "highlights": [
+      "Tết cơm mới",
+      "Tôn vinh hạt gạo",
+      "Bản sắc người Tày"
+    ]
+  },
+  {
+    "id": 19,
+    "name": "Lễ hội Đền Gia Phú",
+    "type": "le_hoi",
+    "area": "Bảo Thắng",
+    "season": "Mùng 2 đến mùng 3 tháng Giêng",
+    "short_desc": "Lễ hội thờ các vị tiền nhân có công khai hoang lập ấp ở vùng hạ lưu sông Hồng.",
+    "full_desc": "Lễ hội Đền Gia Phú gồm lễ tế thần và các hoạt động đấu vật, cờ tướng, múa lân. Đây là dịp khơi dậy tinh thần yêu nước, gắn kết tình làng nghĩa xóm và tạo sinh khí đầu xuân.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_en_gia_phu.jpg",
+    "highlights": [
+      "Truyền thống đầu xuân",
+      "Gắn kết cộng đồng",
+      "Khơi dậy lòng yêu nước"
+    ]
+  },
+  {
+    "id": 20,
+    "name": "Lễ hội Gầu Tào Pha",
+    "type": "le_hoi",
+    "area": "Mường Khương",
+    "season": "Theo quy mô vùng, thường 3 năm một lần",
+    "short_desc": "Phiên bản mở rộng của lễ hội Gầu Tào, quy tụ nhiều bản làng người Mông cùng tham gia.",
+    "full_desc": "Lễ hội Gầu Tào Pha có quy mô lớn với đua ngựa, múa khèn và hát ống truyền thống. Đây là dịp thể hiện sức mạnh đoàn kết, sự phong phú của văn hóa Mông và sức hấp dẫn du lịch văn hóa vùng cao.",
+    "image": "kho_anh/lehoi_langnghe/le_hoi_gau_tao_pha.jpg",
+    "highlights": [
+      "Quy mô lớn",
+      "Văn hóa Mông",
+      "Đua ngựa múa khèn"
+    ]
+  },
+  {
+    "id": 21,
+    "name": "Làng nghề thêu dệt thổ cẩm Tả Phìn",
+    "type": "lang_nghe",
+    "area": "Sa Pa",
+    "season": "Quanh năm",
+    "short_desc": "Nơi lưu giữ nghề thêu dệt thổ cẩm thủ công đặc sắc của người Dao đỏ ở Tả Phìn.",
+    "full_desc": "Làng nghề thêu dệt thổ cẩm Tả Phìn nổi tiếng với quy trình trồng lanh, tước sợi, dệt vải, nhuộm chàm và thêu họa tiết hoàn toàn bằng tay. Các hoa văn hình học, cây cỏ và động vật phản ánh đời sống, tín ngưỡng của cộng đồng. Nghề truyền thống này vừa bảo tồn bản sắc văn hóa Dao đỏ, vừa tạo sinh kế gắn với du lịch Sa Pa.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_theu_det_tho_cam_ta_phin.jpg",
+    "highlights": [
+      "Thủ công truyền thống",
+      "Bản sắc Dao đỏ",
+      "Trải nghiệm du lịch"
+    ]
+  },
+  {
+    "id": 22,
+    "name": "Làng nghề nấu rượu ngô Bản Phố",
+    "type": "lang_nghe",
+    "area": "Bắc Hà",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề nổi tiếng với rượu ngô thủ công của người Mông, mang hương vị đặc trưng vùng cao.",
+    "full_desc": "Rượu ngô Bản Phố được nấu từ ngô chín trộn men lá truyền thống, ủ kín rồi chưng cất bằng bếp củi, làm mát bằng nước suối. Sản phẩm có hương thơm riêng, vị êm và hậu ngọt. Nghề nấu rượu gắn với đời sống tinh thần, lễ hội của đồng bào Mông và hiện là sản phẩm góp phần phát triển kinh tế địa phương.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_nau_ruou_ngo_ban_pho.jpg",
+    "highlights": [
+      "Đặc sản vùng cao",
+      "Men lá truyền thống",
+      "Trải nghiệm homestay"
+    ]
+  },
+  {
+    "id": 23,
+    "name": "Làng nghề nấu rượu San Lùng",
+    "type": "lang_nghe",
+    "area": "Bát Xát",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề nấu rượu thóc truyền thống của người Dao đỏ, nổi bật với hương thơm dịu và vị ngọt đặc trưng.",
+    "full_desc": "Rượu San Lùng được làm từ thóc nương nấu chín, ủ với men lá thảo dược rừng và chưng cất bằng nguồn nước suối tự nhiên. Sản phẩm mang giá trị tâm linh, văn hóa và đã được bảo hộ thương hiệu, trở thành nét đặc sắc của vùng Bát Xát.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_nau_ruou_san_lung.jpg",
+    "highlights": [
+      "Rượu thóc truyền thống",
+      "Giá trị tâm linh",
+      "Đặc sản địa phương"
+    ]
+  },
+  {
+    "id": 24,
+    "name": "Làng nghề mây tre đan Nghĩa Đô",
+    "type": "lang_nghe",
+    "area": "Bảo Yên",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề đan lát thủ công của người Tày với nhiều sản phẩm mây tre đậm chất bản địa.",
+    "full_desc": "Tre, nứa được lựa chọn kỹ, chẻ nan, xử lý chống mối mọt rồi đan thành các sản phẩm như giỏ, gùi, rổ, bàn ghế. Nghề phản ánh đời sống truyền thống của người Tày, đồng thời mở ra hướng phát triển du lịch và tăng thu nhập cho người dân.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_may_tre_an_nghia_o.jpg",
+    "highlights": [
+      "Đan lát thủ công",
+      "Văn hóa người Tày",
+      "Sản phẩm du lịch"
+    ]
+  },
+  {
+    "id": 25,
+    "name": "Làng nghề miến đao Bản Xèo",
+    "type": "lang_nghe",
+    "area": "Bát Xát",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề sản xuất miến từ củ dong riềng với màu tự nhiên và độ dai cao.",
+    "full_desc": "Miến đao Bản Xèo được làm từ củ dong nghiền, lọc tinh bột, nấu thành hồ rồi ép sợi và phơi khô tự nhiên. Không dùng hóa chất nên sản phẩm giữ được màu sắc tự nhiên và chất lượng đặc trưng. Đây là sản phẩm nông nghiệp tiêu biểu góp phần tạo việc làm và chuyển đổi kinh tế địa phương.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_mien_ao_ban_xeo.jpg",
+    "highlights": [
+      "Miến dong truyền thống",
+      "Không dùng hóa chất",
+      "Trải nghiệm làm miến"
+    ]
+  },
+  {
+    "id": 26,
+    "name": "Làng nghề làm giấy bản Tòng Sành",
+    "type": "lang_nghe",
+    "area": "Bát Xát",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề làm giấy bản thủ công của người Dao, gắn với tín ngưỡng và văn hóa truyền thống.",
+    "full_desc": "Người dân ngâm, nấu vỏ cây, giã thành bột rồi kéo giấy bằng khuôn và phơi khô tự nhiên. Giấy bản là vật phẩm quan trọng trong nhiều nghi lễ tâm linh, đồng thời góp phần bảo tồn chữ viết và văn hóa của cộng đồng người Dao.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_lam_giay_ban_tong_sanh.jpg",
+    "highlights": [
+      "Giấy bản thủ công",
+      "Văn hóa Dao",
+      "Giữ gìn tín ngưỡng"
+    ]
+  },
+  {
+    "id": 27,
+    "name": "Làng nghề thêu thổ cẩm Nậm Rịa",
+    "type": "lang_nghe",
+    "area": "Thành phố Lào Cai",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề thêu thổ cẩm của người Xa Phó với kỹ thuật tạo hoa văn độc đáo.",
+    "full_desc": "Vải bông được dệt rồi thêu họa tiết từ mặt trái, kết hợp đính hạt tạo hiệu ứng đặc biệt. Nghề thêu Nậm Rịa lưu giữ bản sắc của một dân tộc ít người, đồng thời có giá trị cao trong lĩnh vực thủ công mỹ nghệ và du lịch văn hóa.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_theu_tho_cam_nam_ria.jpg",
+    "highlights": [
+      "Thêu thổ cẩm độc đáo",
+      "Bản sắc Xa Phó",
+      "Thủ công mỹ nghệ"
+    ]
+  },
+  {
+    "id": 28,
+    "name": "Làng nghề làm hương Kíp Tước",
+    "type": "lang_nghe",
+    "area": "Thành phố Lào Cai",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề làm hương thủ công của người Giáy, nổi bật với nguyên liệu thảo mộc tự nhiên.",
+    "full_desc": "Chân hương được làm từ tre, phần bột pha từ nhựa cây, quế và lá rừng, sau đó lăn thủ công và phơi nắng tự nhiên. Nghề làm hương phục vụ tín ngưỡng thờ cúng và tạo nguồn thu nhập ổn định cho người dân, đặc biệt vào dịp lễ Tết.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_lam_huong_kip_tuoc.jpg",
+    "highlights": [
+      "Thảo mộc tự nhiên",
+      "Nghề truyền thống",
+      "Phục vụ tín ngưỡng"
+    ]
+  },
+  {
+    "id": 29,
+    "name": "Làng nghề thêu thổ cẩm Ngải Trồ",
+    "type": "lang_nghe",
+    "area": "Bát Xát",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề thêu và may trang phục truyền thống của người Hà Nhì ở Y Tý.",
+    "full_desc": "Vải được nhuộm chàm nhiều lần rồi thêu họa tiết hình học truyền thống, kết hợp phụ kiện bạc và len. Nghề thêu Ngải Trồ thể hiện rõ bản sắc văn hóa người Hà Nhì, đồng thời góp phần phát triển du lịch cộng đồng ở Y Tý.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_theu_tho_cam_ngai_tro.jpg",
+    "highlights": [
+      "Bản sắc Hà Nhì",
+      "Nhuộm chàm truyền thống",
+      "Du lịch vùng cao"
+    ]
+  },
+  {
+    "id": 30,
+    "name": "Làng nghề nấu rượu thóc Ky Quan San",
+    "type": "lang_nghe",
+    "area": "Bát Xát",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề nấu rượu thóc thủ công gắn với đời sống văn hóa vùng cao.",
+    "full_desc": "Thóc nương được ủ với men lá từ nhiều loại thảo dược rồi chưng cất theo phương pháp truyền thống. Sản phẩm mang hương vị riêng, gắn với lễ hội, sinh hoạt cộng đồng và phục vụ du lịch trải nghiệm ở khu vực Mường Hum.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_nau_ruou_thoc_ky_quan_san.jpg",
+    "highlights": [
+      "Men lá thảo dược",
+      "Đặc sản vùng cao",
+      "Gắn với lễ hội"
+    ]
+  },
+  {
+    "id": 31,
+    "name": "Làng nghề đan rọ tôm Đồng Tâm",
+    "type": "lang_nghe",
+    "area": "Bảo Yên",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề đan rọ tôm thủ công phản ánh kinh nghiệm khai thác tự nhiên của người dân địa phương.",
+    "full_desc": "Tre được chẻ thành nan nhỏ và đan theo cấu trúc đặc biệt để giữ tôm cá, sau đó hun khói tăng độ bền. Nghề vừa lưu giữ tri thức dân gian, vừa tạo thêm nguồn thu nhập và sản phẩm lưu niệm độc đáo.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_an_ro_tom_ong_tam.jpg",
+    "highlights": [
+      "Kinh nghiệm dân gian",
+      "Đan lát thủ công",
+      "Gắn với suối núi"
+    ]
+  },
+  {
+    "id": 32,
+    "name": "Làng nghề nấu rượu Pa Dí",
+    "type": "lang_nghe",
+    "area": "Mường Khương",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề nấu rượu ngô của người Pa Dí với hương vị riêng biệt vùng biên giới.",
+    "full_desc": "Ngô được ủ với men lá từ nhiều loại thảo dược rồi chưng cất theo cách truyền thống. Nghề nấu rượu thể hiện nét văn hóa đặc trưng của người Pa Dí, đồng thời trở thành sản phẩm du lịch hấp dẫn ở Mường Khương.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_nau_ruou_pa_di.jpg",
+    "highlights": [
+      "Đặc sản Pa Dí",
+      "Văn hóa vùng biên",
+      "Men lá truyền thống"
+    ]
+  },
+  {
+    "id": 33,
+    "name": "Làng nghề mây tre đan Na Đẩy",
+    "type": "lang_nghe",
+    "area": "Mường Khương",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề đan lát của người Nùng với nhiều sản phẩm bền đẹp, mang tính thẩm mỹ cao.",
+    "full_desc": "Tre, mây được xử lý, hun khói rồi đan thành ghế, gùi, đồ trang trí và vật dụng sinh hoạt. Nghề gắn bó với đời sống thường ngày của người Nùng và góp phần phát triển kinh tế địa phương.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_may_tre_an_na_ay.jpg",
+    "highlights": [
+      "Đan lát người Nùng",
+      "Bền đẹp",
+      "Giá trị thẩm mỹ"
+    ]
+  },
+  {
+    "id": 34,
+    "name": "Làng nghề thêu thổ cẩm Lao Ma Chải",
+    "type": "lang_nghe",
+    "area": "Mường Khương",
+    "season": "Quanh năm",
+    "short_desc": "Làng nghề thêu và dệt trang phục người Mông với kỹ thuật vẽ sáp ong, nhuộm chàm đặc sắc.",
+    "full_desc": "Người dân kết hợp vẽ sáp ong, nhuộm chàm và thêu ghép vải để tạo nên các hoa văn độc đáo trên trang phục Mông. Đây là sản phẩm du lịch có giá trị cao, đồng thời là phương tiện lưu giữ bản sắc văn hóa dân tộc.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_theu_tho_cam_lao_ma_chai.jpg",
+    "highlights": [
+      "Vẽ sáp ong",
+      "Trang phục Mông",
+      "Hoa văn đặc sắc"
+    ]
+  },
+  {
+    "id": 35,
+    "name": "Làng nghề làm cốm Na Hối",
+    "type": "lang_nghe",
+    "area": "Bắc Hà",
+    "season": "Mùa lúa chín",
+    "short_desc": "Làng nghề chế biến cốm từ lúa nếp non, gắn với mùa vụ và lễ mừng cơm mới.",
+    "full_desc": "Lúa nếp non được rang, giã và sàng thủ công để tạo ra hạt cốm dẻo thơm. Nghề làm cốm vừa phản ánh đời sống nông nghiệp của người dân vùng cao, vừa tạo sản phẩm du lịch theo mùa hấp dẫn.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_lam_com_na_hoi.jpg",
+    "highlights": [
+      "Cốm truyền thống",
+      "Mùa vụ đặc sắc",
+      "Ẩm thực vùng cao"
+    ]
+  },
+  {
+    "id": 36,
+    "name": "Làng nghề làm bánh chưng đen Tà Chải",
+    "type": "lang_nghe",
+    "area": "Bắc Hà",
+    "season": "Dịp lễ Tết",
+    "short_desc": "Làng nghề làm bánh chưng đen của người Tày, một món ăn truyền thống đặc sắc vùng cao.",
+    "full_desc": "Gạo nếp được trộn với than cây rừng tạo màu đen, gói cùng nhân thịt lợn rồi luộc nhiều giờ. Bánh chưng đen là món ăn quan trọng trong dịp lễ Tết và là sản phẩm du lịch mang đậm bản sắc dân tộc Tày.",
+    "image": "kho_anh/lehoi_langnghe/lang_nghe_lam_banh_chung_en_ta_chai.jpg",
+    "highlights": [
+      "Ẩm thực truyền thống",
+      "Bản sắc người Tày",
+      "Đặc sản lễ Tết"
+    ]
+  },
+  {
+    "id": 37,
+    "name": "Nghề làm trống truyền thống người Dao đỏ Tả Phìn",
+    "type": "lang_nghe",
+    "area": "Sa Pa",
+    "season": "Quanh năm",
+    "short_desc": "Nghề chế tác trống thủ công phục vụ nghi lễ của người Dao đỏ ở Tả Phìn.",
+    "full_desc": "Tang trống được làm từ gỗ khoét rỗng, mặt trống làm từ da trâu hoặc bò và căng thủ công để tạo âm thanh chuẩn. Trống là nhạc cụ linh thiêng trong các nghi lễ của người Dao, góp phần bảo tồn văn hóa truyền thống.",
+    "image": "kho_anh/lehoi_langnghe/nghe_lam_trong_truyen_thong_nguoi_dao_o_ta_phin.jpg",
+    "highlights": [
+      "Nhạc cụ nghi lễ",
+      "Thủ công truyền thống",
+      "Văn hóa Dao đỏ"
+    ]
+  },
+  {
+    "id": 38,
+    "name": "Nghề làm đường phên Nghĩa Đô",
+    "type": "lang_nghe",
+    "area": "Bảo Yên",
+    "season": "Quanh năm",
+    "short_desc": "Nghề làm đường phên thủ công từ mía, gắn với đời sống và ẩm thực của người Tày.",
+    "full_desc": "Nước mía được đun sôi, cô đặc rồi đổ khuôn thành bánh đường phên. Sản phẩm có giá trị kinh tế cao, được ưa chuộng và thể hiện nét sinh hoạt truyền thống của cộng đồng người Tày ở Nghĩa Đô.",
+    "image": "kho_anh/lehoi_langnghe/nghe_lam_uong_phen_nghia_o.jpg",
+    "highlights": [
+      "Đường phên truyền thống",
+      "Sản phẩm địa phương",
+      "Ẩm thực bản địa"
+    ]
+  },
+  {
+    "id": 39,
+    "name": "Nghề vẽ sáp ong truyền thống",
+    "type": "lang_nghe",
+    "area": "Sa Pa",
+    "season": "Quanh năm",
+    "short_desc": "Nghề vẽ sáp ong trên vải lanh của người Mông, thể hiện trình độ thẩm mỹ và bản sắc dân tộc.",
+    "full_desc": "Sáp ong được nung chảy, dùng bút vẽ trực tiếp lên vải rồi nhuộm chàm để tạo hoa văn. Đây là kỹ thuật thủ công độc đáo tạo nên các sản phẩm vải lanh, trang phục và đồ lưu niệm đậm chất văn hóa vùng cao.",
+    "image": "kho_anh/lehoi_langnghe/nghe_ve_sap_ong_truyen_thong.jpg",
+    "highlights": [
+      "Kỹ thuật độc đáo",
+      "Hoa văn Mông",
+      "Trải nghiệm nhuộm vải"
+    ]
+  },
+  {
+    "id": 40,
+    "name": "Nghề chế tác khèn Mông Bắc Hà",
+    "type": "lang_nghe",
+    "area": "Bắc Hà",
+    "season": "Quanh năm",
+    "short_desc": "Nghề chế tác khèn truyền thống gắn liền với đời sống tinh thần của người Mông.",
+    "full_desc": "Khèn được làm từ gỗ và ống trúc, lắp ghép nhiều bộ phận để tạo âm thanh đặc trưng. Đây là nhạc cụ quan trọng trong lễ hội, sinh hoạt cộng đồng và các hoạt động văn hóa của người Mông vùng Bắc Hà.",
+    "image": "kho_anh/lehoi_langnghe/nghe_che_tac_khen_mong_bac_ha.jpg",
+    "highlights": [
+      "Nhạc cụ dân tộc",
+      "Văn hóa Mông",
+      "Biểu diễn truyền thống"
+    ]
+  },
+  {
+    "id": 41,
+    "name": "Nghề rèn thủ công vùng cao",
+    "type": "lang_nghe",
+    "area": "Bát Xát - Mường Khương",
+    "season": "Quanh năm",
+    "short_desc": "Nghề rèn thủ công tạo ra các công cụ lao động phục vụ sản xuất nông nghiệp vùng cao.",
+    "full_desc": "Sắt được nung nóng rồi rèn bằng tay để tạo dao, cuốc, liềm và nhiều dụng cụ khác. Nghề rèn vừa phục vụ đời sống sản xuất, vừa phản ánh kỹ năng thủ công bền bỉ của người dân miền núi.",
+    "image": "kho_anh/lehoi_langnghe/nghe_ren_thu_cong_vung_cao.jpg",
+    "highlights": [
+      "Rèn thủ công",
+      "Công cụ lao động",
+      "Kỹ năng truyền thống"
+    ]
+  },
+  {
+    "id": 42,
+    "name": "Nghề chế tác bạc truyền thống",
+    "type": "lang_nghe",
+    "area": "Sa Pa",
+    "season": "Quanh năm",
+    "short_desc": "Nghề chạm khắc và chế tác bạc truyền thống mang ý nghĩa tâm linh và thẩm mỹ cao.",
+    "full_desc": "Bạc được nung, tạo hình và chạm khắc hoa văn bằng tay để làm vòng cổ, vòng tay, hoa tai. Trang sức bạc gắn bó với đời sống của người Dao và Mông, vừa làm đẹp vừa mang ý nghĩa bảo hộ tinh thần.",
+    "image": "kho_anh/lehoi_langnghe/nghe_che_tac_bac_truyen_thong.jpg",
+    "highlights": [
+      "Trang sức bạc",
+      "Ý nghĩa tâm linh",
+      "Thủ công mỹ nghệ"
+    ]
+  }
+]
