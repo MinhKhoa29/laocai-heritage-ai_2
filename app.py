@@ -275,6 +275,13 @@ def load_chat_history(user_id: int, limit: int = 100):
 
     return [{"role": row["role"], "content": row["content"]} for row in rows]
 
+def clear_chat_history(user_id: int):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM chat_messages WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
 def seed_default_community_posts():
     conn = get_db_conn()
     cur = conn.cursor()
@@ -388,15 +395,21 @@ def format_post_time(iso_text: str) -> str:
     except Exception:
         return "Vừa xong"
 
-def ensure_default_chat_history(user_id: int, default_bot_message: str):
+
+def ensure_default_chat_history(user_id: int, default_messages=None):
     conn = get_db_conn()
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) AS total FROM chat_messages WHERE user_id = ?", (user_id,))
     total = cur.fetchone()["total"]
     conn.close()
 
-    if total == 0:
-        save_chat_message(user_id, "assistant", default_bot_message)
+    if total == 0 and default_messages:
+        for msg in default_messages:
+            role = str(msg.get("role", "")).strip()
+            content = str(msg.get("content", "")).strip()
+
+            if role in ["user", "assistant"] and content:
+                save_chat_message(user_id, role, content)
 
 def build_app_url(page_name: str = "home", **params):
     query = {"page": page_name}
@@ -8758,10 +8771,44 @@ elif page == "chatbot":
         "anime_teamlogo.png"
     ])
 
-    default_bot_message = (
-        "Xin chào! Mình là trợ lý AI của Lao Cai Heritage AI. "
-        "Bạn có thể hỏi về điểm đến, lịch trình, mùa đẹp hoặc chi phí tham khảo."
-    )
+    default_demo_messages = [
+        {
+            "role": "user",
+            "content": "xin chào"
+        },
+        {
+            "role": "assistant",
+            "content": "Xin chào! Mình đây. Bạn cần mình hỗ trợ gì ngay bây giờ?"
+        },
+
+        {
+            "role": "user",
+            "content": "giới thiệu giúp về đền thượng lào cai"
+        },
+        {
+            "role": "assistant",
+            "content": "Mình tìm nhanh thông tin đáng tin cậy về Đền Thượng để giới thiệu cho bạn gọn, dễ nói, và đúng địa danh Lào Cai.\n\nĐền Thượng Lào Cai là một điểm du lịch tâm linh và di tích văn hóa nổi bật của thành phố Lào Cai. Nơi đây gắn với việc thờ Hưng Đạo Đại Vương Trần Quốc Tuấn, mang ý nghĩa tưởng nhớ công lao giữ nước và bảo vệ vùng biên cương. Lễ hội Đền Thượng cũng là một sinh hoạt văn hóa lớn đầu xuân của địa phương.\n\nBạn có thể giới thiệu ngắn gọn như sau:\n\nĐền Thượng nằm tại phường Lào Cai, thành phố Lào Cai, là một địa điểm tâm linh nổi tiếng và giàu giá trị lịch sử của vùng đất biên cương. Ngôi đền thờ Hưng Đạo Đại Vương Trần Quốc Tuấn, thể hiện truyền thống uống nước nhớ nguồn và lòng biết ơn đối với vị anh hùng dân tộc có công với đất nước. Hằng năm, nơi đây diễn ra Lễ hội Đền Thượng vào dịp tháng Giêng, thu hút đông đảo người dân và du khách đến dâng hương, tham quan và hòa mình vào các hoạt động văn hóa truyền thống đặc sắc. Đền Thượng không chỉ là nơi sinh hoạt tín ngưỡng mà còn góp phần làm nổi bật bản sắc văn hóa của Lào Cai."
+        },
+
+        {
+            "role": "user",
+            "content": "ngắn gọn giúp mình tạo lịch trình 3 ngày 3 đêm tại sapa"
+        },
+        {
+            "role": "assistant",
+            "content": "Mình ghép cho bạn một lịch trình ngắn, dễ demo, dựa trên các điểm nổi bật và thông tin hiện có ở Sa Pa.\n\nĐây là lịch trình ngắn gọn 3 ngày 3 đêm ở Sa Pa:\n\nĐêm 1:\nDi chuyển đến Sa Pa, nhận phòng khách sạn, đi dạo nhà thờ đá Sa Pa, ăn đồ nướng và nghỉ ngơi. Sa Pa là điểm du lịch nổi bật của Lào Cai, nổi tiếng với khí hậu mát, cảnh núi và văn hóa bản địa.\n\nNgày 1:\nTham quan bản Cát Cát buổi sáng, chiều check-in Moana Sa Pa hoặc khu trung tâm thị xã, tối dạo chợ đêm. Cát Cát là một trong những điểm tham quan phổ biến nhất ở Sa Pa.\n\nĐêm 2:\nNghỉ tại Sa Pa, thưởng thức đặc sản địa phương.\n\nNgày 2:\nĐi Fansipan bằng cáp treo vào buổi sáng, chiều nghỉ ngơi hoặc cafe ngắm núi. Fansipan là điểm đến nổi bật của Sa Pa và thường được xem là biểu tượng du lịch của khu vực.\n\nĐêm 3:\nTự do khám phá thị xã Sa Pa, mua quà, chuẩn bị về.\n\nNgày 3:\nTham quan Lao Chải – Tả Van để ngắm ruộng bậc thang, tìm hiểu đời sống người dân bản địa, sau đó lên xe trở về. Đây là tuyến trải nghiệm rất phổ biến khi đi Sa Pa.\n\nBạn cứ ngắn để cho vào web hoặc thuyết trình:\n\n“Đêm 1 đến Sa Pa nghỉ ngơi, ngày 1 đi bản Cát Cát, ngày 2 chinh phục Fansipan, ngày 3 tham quan Lao Chải – Tả Van rồi trở về.”"
+        },
+
+        {
+            "role": "user",
+            "content": "du lịch lào cai lên ăn món nào"
+        },
+        {
+            "role": "assistant",
+            "content": "Mình kiểm tra nhanh các món đặc trưng Lào Cai để gợi ý đúng kiểu “đi Lào Cai nên ăn gì”, ưu tiên món nổi tiếng và dễ giới thiệu.\n\nLên Lào Cai, nhất là Sa Pa, bạn nên thử mấy món này:\n\n1. Thắng cố\nMón đặc trưng vùng cao, rất nổi tiếng ở Sa Pa và thường được nhắc như một món “phải thử” khi đến đây.\n\n2. Lẩu cá hồi, cá tầm\nĐây là nhóm món nổi bật của Sa Pa, hợp thời tiết lạnh và được báo địa phương giới thiệu nhiều cho du khách.\n\n3. Thịt lợn cắp nách\nMột đặc sản quen thuộc của vùng cao Lào Cai, thường có trong danh sách món nên ăn khi du lịch Sa Pa.\n\n4. Thịt trâu gác bếp\nMón rất hợp mua ăn tại chỗ hoặc làm quà, cũng là đặc sản Tây Bắc được nhắc nhiều ở Sa Pa.\n\n5. Gà đen\nLà món đặc sản địa phương, thường xuất hiện trong các bữa ăn dành cho khách du lịch ở Sa Pa."
+        }
+    ]
+    
 
     current_user_id = st.session_state["auth_user"]["id"]
 
@@ -8769,7 +8816,7 @@ elif page == "chatbot":
         "gemini_loaded_user_id" not in st.session_state
         or st.session_state.gemini_loaded_user_id != current_user_id
     ):
-        ensure_default_chat_history(current_user_id, default_bot_message)
+        ensure_default_chat_history(current_user_id, default_demo_messages)
         st.session_state.gemini_messages = load_chat_history(current_user_id)
         st.session_state.gemini_loaded_user_id = current_user_id
 
